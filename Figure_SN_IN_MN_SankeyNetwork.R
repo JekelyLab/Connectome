@@ -1,3 +1,7 @@
+#R code to generate the Sankey graph in Figure_segmental_connections Panel D in the Verasztó et al 2021 Platynereis connectome paper
+#Uses Natverse and accesses the data on catmaid
+#Gaspar Jekely Feb 2021
+
 rm(list = ls(all.names = TRUE)) #will clear all objects includes hidden objects.
 gc() #free up memrory and report the memory usage.
 Sys.setenv('R_MAX_VSIZE'=8000000000)
@@ -10,9 +14,9 @@ library(natverse)
 library(RColorBrewer)
 
 #set working directory
-setwd('/Users/gj274/OneDrive\ -\ University\ of\ Exeter/Paper/Connectome/Figures/Figure_celltypes/')
+setwd('/working_dir/')
 
-# catmaid connection, needs username, password AND token - weird!
+# catmaid connection, needs username, password AND token
 # can run this separate file using source function
 source("~/R/conn.R")
 # best practice is to store this info in your .Renviron file and R will
@@ -29,6 +33,7 @@ body_regions <- c('episphere','segment_0', 'segment_1', 'segment_2', 'segment_3'
 cell_category <- c('Sensory neuron','interneuron', 'motorneuron', 'effector')
 
 list_position=0; synapse_list=list(); matrix_lists=list()
+#these iterated loops will query the connectome_cells data based on annotations and retrieve the connectivity between sets of cells (defined by their skids)
 for (i in c(1:6)){  #iterate through the six body regions
   body_region_i = body_regions[i]
   cycle=0
@@ -85,15 +90,19 @@ for (i in c(1:6)){  #iterate through the six body regions
 #convert synapse list into a matrix of appropriate dimensions
 synapse_matrix = matrix(unlist(synapse_list), byrow=TRUE, nrow=24 )
 
+#define the names for plotting of the six body regions and cell categories
+body_regions_name <- c('head','sg0', 'sg1', 'sg2', 'sg3', 'pyg')
+#define the cell categories, matching the catmaid annotations
+cell_category_name <- c('SN','IN', 'MN', 'eff')
+
 #we make a cellgroup name list 
 cell_group_names=list();counter=0
 for (i in c(1:6)){  #iterate through the six body regions
-  body_region_i = body_regions[i]
+  body_region_i = body_regions_name[i]
   for (j in c(1:4)){  #iterate through the cell categories
     counter <- counter+1
-    cell_group_names[[counter]] <- paste(cell_category[j],'s-', body_regions[i], sep="")
+    cell_group_names[[counter]] <- paste(cell_category_name[j], body_regions_name[i], sep="-")
 }}  
-cell_group_names[1:8]
 
 synapse_matrix = as.data.frame(synapse_matrix)
 
@@ -119,7 +128,6 @@ library(htmlwidgets)
 celltype_conn_graph <- graph_from_adjacency_matrix(synapse_matrix,
     mode = c("directed"),
     weighted = T,  diag = TRUE, add.colnames = NULL, add.rownames = NA)
-celltype_conn_graph
 
 wc <- cluster_walktrap(celltype_conn_graph)
 members <- membership(wc)
@@ -134,21 +142,25 @@ celltype_conn_graph_d3$nodes$group <- as.character(celltype_conn_graph_d3$nodes$
 sankeyNetwork(Links = celltype_conn_graph_d3$links, Nodes = celltype_conn_graph_d3$nodes, Source = "source",
                     Target = "target",  NodeID = "name",Value = "value",
                     LinkGroup = NULL, units = "", NodeGroup = "group",
-                    colourScale = JS("d3.scaleOrdinal(d3.schemeCategory20);"), fontSize = 16,
-                    fontFamily = "sans", nodeWidth = 30, nodePadding = 5, margin = NULL,
-                    height = NULL, width = NULL, iterations = 300, sinksRight = T)
+                    colourScale = JS("d3.scaleOrdinal(d3.schemeCategory20);"), fontSize = 66,
+                    fontFamily = "sans", nodeWidth = 200, nodePadding = 10, margin = 0,
+                    height = NULL, width = NULL, iterations = 500, sinksRight = T)
 
+#to save as pdf open in the browser (Show in new window icon in the Viewer window) and save as pdf
 
-#filtered by edge strength
-{syn_threshold=1
-celltype_conn_graph_d3_thr <- celltype_conn_graph_d3
+#filtered by edge strength (optional)
 link_strength <- celltype_conn_graph_d3_thr$links$value
+hist(link_strength, col='blue',breaks=100)
+
+syn_threshold=25
+celltype_conn_graph_d3_thr <- celltype_conn_graph_d3
 
 for (i in seq_along(link_strength)) {
   if (link_strength[i]<syn_threshold){
         link_strength[i] <- 0}
 }
 link_strength
+hist(link_strength, col='blue',breaks=100)
 
 celltype_conn_graph_d3_thr$links$value <- link_strength
 
@@ -159,30 +171,4 @@ sankeyNetwork(Links = celltype_conn_graph_d3_thr$links, Nodes = celltype_conn_gr
               colourScale = JS("d3.scaleOrdinal(d3.schemeCategory20);"), fontSize = 16,
               fontFamily = "sans", nodeWidth = 30, nodePadding = 5, margin = NULL,
               height = NULL, width = NULL, iterations = 300, sinksRight = T)
-}
 
-
-
-
-
-
-
-####################
-#Saving files
-####################
-
-#save the matrix as pdf
-pdf('Celltype_connectivity_matrix.pdf', width=7.5, height=7)
-heatmap((synapse_matrix.no0),   #show matrix 
-        Rowv=NA, Colv=NA,
-        cexRow = 0.07, cexCol = 0.07, revC=T, 
-        scale = 'none',
-        col=hcl.colors(300, "Oslo", alpha = 1, rev = FALSE, fixup = TRUE), #col=brewer.pal(9, 'YlOrRd'), #col=terrain.colors(500, rev=T),
-        symm=F, margins= c(3,2))
-dev.off()
-
-
-write.csv(synapse_matrix.no0, file = "Celltype_connectivity_matrix.csv",
-          quote = FALSE,
-          eol = "\n", na = "NA",
-          fileEncoding = "")
