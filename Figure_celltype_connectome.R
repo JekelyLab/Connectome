@@ -11,7 +11,7 @@ options(timeout = 4000000)
 library(natverse)
 
 #set working directory
-setwd('/Users/gaspar/OneDrive\ -\ University\ of\ Exeter/Paper/Connectome/Figures/Figure_celltypes')
+setwd('/Users/gj274/OneDrive\ -\ University\ of\ Exeter/Paper/Connectome/Figures/Figure_celltypes')
 
 # catmaid connection, needs username, password AND token
 # can run this separate file using source function
@@ -52,7 +52,7 @@ for (df1 in annotation_celltypelist){    #iterate through the celltype list  (al
     presyn_skids <- df1$skid
     cycle <- cycle + 1
     print (cycle)
-    cells_per_celltype[cycle] <- length(presyn_skids)
+    cells_per_celltype[cycle] <- length(unique(presyn_skids))
     if (cycle>182){next} #we only collect the connectivity for presyn cells 1-182 (these are the neurons)
     
         for (df2 in annotation_celltypelist){  #nested iteration through the celltype list (postsyn cells)
@@ -70,7 +70,6 @@ for (df1 in annotation_celltypelist){    #iterate through the celltype list  (al
         synapse_list [[list_position]] <- N_synapses
         }
 }
-
 
 
 #convert synapse list into a matrix of appropriate dimensions
@@ -126,3 +125,154 @@ write.csv(synapse_matrix, file = "Celltype_connectivity_matrix.csv",
           quote = FALSE,
           eol = "\n", na = "NA",
           fileEncoding = "")
+
+
+
+
+
+
+####################################
+#plot number of cells per celltype as histogram
+####################################
+
+#count again the number of unique skids per celltype
+cycle=0
+for (df1 in annotation_celltypelist){    #iterate through the celltype list  (all presyn cells in groups)
+  presyn_skids <- df1$skid
+  cycle <- cycle + 1
+  cells_per_celltype[cycle] <- length(unique(presyn_skids))
+
+}
+
+#plot histogram
+cells_per_celltype <- as.numeric(cells_per_celltype)
+
+pdf('Histogram_cells_per_celltype_neuronal.pdf', width=5, height=5)
+hg1 <- hist(cells_per_celltype[1:182], plot=F,  breaks = c(1:60), right=F)
+plot(hg1, main = NA, xlab = "# of cells per celltype", ylab = "count", 
+     col = ('grey50'),xlim = range(1:60),ylim = range(1:100),
+     cex.axis=1.2,cex.lab=1.8)
+
+hg1
+dev.off()
+
+pdf('Histogram_cells_per_celltype_non_neuronal.pdf', width=5, height=5)
+hg2 <- hist(cells_per_celltype[183:272], plot=F,  breaks = "FD", right=F)
+plot(hg2, main = NA, xlab = "# of cells per celltype", 
+     col = ('grey50'),xlim = range(1:max(cells_per_celltype[183:272])),ylim = range(1:40),
+     cex.axis=1.2,cex.lab=1.8)
+hg2
+dev.off()
+
+
+#3D plotting of unique cells
+
+outline <- catmaid_get_volume(1, rval = c("mesh3d", "catmaidmesh", "raw"),
+                              invertFaces = T, conn = NULL, pid = 11)
+yolk <- catmaid_get_volume(4, rval = c("mesh3d", "catmaidmesh", "raw"),
+                           invertFaces = T, conn = NULL, pid = 11)
+
+
+nopen3d() # opens apannable 3d window
+mfrow3d(1, 1)  #defines the two scenes
+par3d(windowRect = c(20, 30, 600, 800)) #to define the size of the rgl window
+nview3d("ventral", extramat=rotationMatrix(0, 1, 0, 0))
+par3d(zoom=0.53)
+
+option(nat.plotengine='plotly')
+
+clear3d()
+
+plot3d(outline, WithConnectors = F, WithNodes = F, soma=F, lwd=2,
+       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.03,
+       col="#E2E2E2") 
+
+plot3d(yolk, WithConnectors = F, WithNodes = F, soma=F, lwd=2,
+       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.07,
+       col="#E2E2E2") 
+
+#count again the number of unique skids per celltype
+cycle=0; colors <- as.list(sample(hcl.colors(300, palette='Spectral')))
+
+for (df1 in annotation_celltypelist){    #iterate through the celltype list  (all presyn cells in groups)
+  presyn_skids <- df1$skid
+  cycle <- cycle + 1 
+  if (cycle>182){break}
+  cells_per_celltype[cycle] <- length(unique(presyn_skids))
+  if (length(unique(presyn_skids))==6){print (unique(presyn_skids))
+    neurons = nlapply(read.neurons.catmaid(unique(presyn_skids), pid=11, fetch.annotations = T), function(x) smooth_neuron(x, sigma=6000))
+    plot3d(neurons, WithConnectors = F, WithNodes = F, soma=T, lwd=2,
+       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
+       col=as.character(colors[cycle]))
+    }
+}
+
+rgl.snapshot("celltypes_sixs.png")
+
+
+
+###############################
+#graph visualisation
+##############################
+
+# Load igraph
+library(igraph)
+#https://rdrr.io/cran/igraph/man/
+library(networkD3)
+library(htmlwidgets)
+
+#make symmatric matrix - fill in rows 182-272 with zeros
+synapse_matrix_Sankey <- matrix(nrow=272,ncol=272)
+synapse_matrix_Sankey[1:182,] <- synapse_matrix
+synapse_matrix_Sankey[183:272,] <- 0
+
+dim(synapse_matrix_Sankey)
+
+#with the make_graph function of igraph we turn it into a graph (input is the list of edge pairs)
+celltype_conn_graph <- graph_from_adjacency_matrix(synapse_matrix_Sankey,
+                                                   mode = c("directed"),
+                                                   weighted = NULL,  diag = TRUE, add.colnames = NULL, add.rownames = NA)
+celltype_conn_graph
+
+wc <- cluster_walktrap(celltype_conn_graph)
+members <- membership(wc)
+
+# Convert to object suitable for networkD3
+celltype_conn_graph_d3 <- igraph_to_networkD3(celltype_conn_graph, group = members)
+
+#The NodeGroup vector in the Nodes data frame needs to be non-numeric so we convert it to character
+celltype_conn_graph_d3$nodes$group <- as.character(celltype_conn_graph_d3$nodes$group)
+
+#The NodeGroup vector in the Nodes data frame needs to be non-numeric so we convert it to character
+celltype_conn_graph_d3$links$value <- 1
+
+# Create force directed network plot
+forceNetwork(Links = celltype_conn_graph_d3$links, Nodes = celltype_conn_graph_d3$nodes, 
+             Source = 'source', Target = 'target', 
+             NodeID = 'name', Group = 'group', bounded = F,
+             arrows = T, Value='value',
+             opacity = 1,
+             fontSize = 30, fontFamily = 'serif',
+             #Nodesize = "weight", 
+             zoom=TRUE,
+             legend = F,
+             colourScale = JS("d3.scaleOrdinal(['FF7F00', '#7FC97F', '#B3B3B3', '#E6AB02', '#FFD92F', '#E41A1C', '#E5D8BD', '#FB8072', '#CAB2D6', '#FED9A6', '#F1E2CC', '#FDC086', '#CBD5E8', '#1B9E77', '#B3DE69', '#FDDAEC']);"),
+             linkDistance = 100,
+             linkWidth = JS("function(d) { return Math.sqrt(d.value); }"),
+             #radiusCalculation = JS(" Math.sqrt(d.nodesize)*2+2"), 
+             charge = -30,
+             #linkColour = linkColors,
+             #height = 5000, width = 5000,
+             opacityNoHover=0, 
+             #clickAction = MyClickScript
+)
+
+# Plot
+sankeyNetwork(Links = celltype_conn_graph_d3$links, Nodes = celltype_conn_graph_d3$nodes, 
+              Source = 'source', Target = 'target', 
+              NodeID = 'name', 
+              colourScale = JS("d3.scaleOrdinal(d3.schemeCategory20);"), fontSize = 16,
+              fontFamily = "sans", nodeWidth = 30, nodePadding = 5, margin = NULL,
+              height = NULL, width = NULL, iterations = 32, sinksRight = F)
+
+
