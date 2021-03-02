@@ -2,7 +2,6 @@
 library(natverse)
 library(nat)
 source("~/R/conn.R")
-
 ####################################
 #this section was used to test the potential_synapses algorhythm on PRC and IN1 cells
 
@@ -24,6 +23,7 @@ potential_synapses_PRC_IN1 <- potential_synapses(
   method = c("approx"), 
   .parallel=TRUE
 )
+
 
 #get synapses between PRC and IN1 cells
 PRC_IN1_connectors <- catmaid_get_connectors_between(pre_skids = names(PRC), post_skids = names(IN1), pid=11)

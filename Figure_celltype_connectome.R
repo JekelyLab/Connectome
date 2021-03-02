@@ -9,7 +9,6 @@ options(timeout = 4000000)
 
 # load nat and all associated packages, incl catmaid
 library(natverse)
-
 #set working directory
 setwd('/Users/gj274/OneDrive\ -\ University\ of\ Exeter/Paper/Connectome/Figures/Figure_celltypes')
 
