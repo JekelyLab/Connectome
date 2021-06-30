@@ -7,20 +7,38 @@ library(ggplot2)
 setwd('.')
 
 #select some colorblind friendly color combinations
-display.brewer.all(colorblindFriendly = TRUE)
-display.brewer.pal(8, 'Dark2')
-brewer.pal(8, 'Dark2')
+# Taken mostly from https://tradeblotter.wordpress.com/2013/02/28/the-paul-tol-21-color-salute/
+Color blind friendly palettes
+########## DEFINE Color palettes #########
+#From Paul Tol: https://personal.sron.nl/~pault/
 Tol_bright <- c('#EE6677', '#228833', '#4477AA', '#CCBB44', '#66CCEE', '#AA3377', '#BBBBBB')
-pie(rep(1,8), col=Tol_bright, Tol_bright)
+Tol_muted <- c('#88CCEE', '#44AA99', '#117733', '#332288', '#DDCC77', '#999933',
+               '#CC6677', '#882255', '#AA4499', '#DDDDDD')
+Tol_light <- c('#BBCC33', '#AAAA00', '#77AADD', '#EE8866', '#EEDD88', '#FFAABB', 
+               '#99DDFF', '#44BB99', '#DDDDDD')
+#From Color Universal Design (CUD): https://jfly.uni-koeln.de/color/
+Okabe_Ito <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", 
+               "#CC79A7", "#000000")
+########################## SHOW as multiple PIE Charts ###################
+par(mfrow=c(2,2))
+par(mar=c(1,1,1,1))
+pie(rep(1,length(Tol_bright)), col=Tol_bright, Tol_bright, main='Tol bright')
+pie(rep(1,length(Tol_muted)), col=Tol_muted, Tol_muted, main='Tol muted')
+pie(rep(1,length(Okabe_Ito)), col=Okabe_Ito, Okabe_Ito, main='Tol Okabe Ito')
+pie(rep(1,length(Tol_light)), col=Tol_light, Tol_light, main='Tol light')
 
+
+#read data from data folder
 SN <- read.csv2('data/SN_skeleton_measurements.csv', sep = ",")
 IN <- read.csv2('data/IN_skeleton_measurements.csv', sep = ",")
 MN <- read.csv2('data/MN_skeleton_measurements.csv', sep = ",")
 
+#convert to tibble
 SN <- as_tibble(SN)
 IN <- as_tibble(IN)
 MN <- as_tibble(MN)
 
+#add neuron type description as a new column
 SN <- SN %>% 
    mutate(neuron_type = 'sensory neuron')
 IN <- IN %>% 
@@ -28,6 +46,7 @@ IN <- IN %>%
 MN <- MN %>% 
   mutate(neuron_type = 'motoneuron')
 
+#combine tibbles
 SN_IN <- full_join(SN,IN)
 SN_IN_MN <- full_join(SN_IN,MN)
 
@@ -40,7 +59,7 @@ SN_IN_MN <- mutate(SN_IN_MN, branchpoints_length_ratio = (N.branch.nodes)/(Smoot
 #add a column with sum of input and output synapses ('total synapses')
 SN_IN_MN <- mutate(SN_IN_MN, total_synapses = (N.inputs+N.outputs))
 
-
+#start plotting with ggplot
 library(ggplot2)
 {
 p1 <- ggplot(SN_IN_MN) +
@@ -57,8 +76,9 @@ p1 <- ggplot(SN_IN_MN) +
     theme_minimal()+
     geom_text( 
       data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-      aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black'
-    )
+      aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+    guides(size = guide_legend('postsynapses'), colour="none", shape="none", alpha="none")
+
 
 p2 <- ggplot(SN_IN_MN) +
   aes(x = Smooth.cable..nm./1000, y = in_out_ratio, colour = neuron_type,
@@ -74,19 +94,42 @@ p2 <- ggplot(SN_IN_MN) +
   theme_minimal()+
   geom_text( 
     data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-    aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black'
-  )
+    aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+  guides(size = guide_legend('presynapses'), colour="none", shape="none", alpha="none")
+
+
+#plot branch numbers
+p3 <- ggplot(SN_IN_MN) +
+  aes(x = Smooth.cable..nm./1000, y = N.branch.nodes, colour = neuron_type,
+      shape=neuron_type, size = total_synapses, alpha=neuron_type) +
+  # geom_point(shape = "circle") + 
+  geom_jitter(stroke=0, width=0, height = 0.01)+
+  scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
+                                   `sensory neuron` = "#E69F00")) +
+  scale_alpha_manual(values=c(0.5,0.8,1)) +
+  scale_size_area(max_size=6)+
+  ylim(0,400)+
+  labs(x='Cable length (µm)', y='number of branch nodes')+
+  scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,500,1000,2000))+   #change "log10" to "identity" to remove log scale
+  theme_minimal()+
+  geom_text(data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
+            aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+  guides(size = guide_legend("all synapses"), shape = guide_legend("neuron type"), 
+        alpha = guide_legend("neuron type"), 
+        colour = guide_legend(override.aes = list(size = 4), 'neuron type'))
 
 #to plot multiple plots use
 library(ggpubr)
-ggarrange(p1, p2, ncol = 2, nrow = 1, labels  = "AUTO", hjust = c(0, 0), font.label = list(size = 14, face = "plain", family = 'sans'))
+ggarrange(p1, p2, p3, ncol = 3, nrow = 1, labels  = "AUTO", hjust = c(0, 0), font.label = list(size = 14, face = "plain", family = 'sans'))
 
-arrange <- ggarrange(p1, p2, ncol = 2, nrow = 1, labels  = "AUTO", hjust = c(0, 0), font.label = list(size = 14, face = "plain", family = 'sans'))
+arrange <- ggarrange(p2, p1, p3, ncol = 3, nrow = 1, labels  = "AUTO", hjust = c(0, 0), font.label = list(size = 14, face = "plain", family = 'sans'))
 # Saving R ggplot with R ggsave Function
 ggsave("plots/SN_IN_MN_A.pdf", width = 15, height = 10, limitsize = FALSE, 
        units = c("cm"), p1)
 ggsave("plots/SN_IN_MN_B.pdf", width = 15, height = 10, limitsize = FALSE, 
        units = c("cm"), p2)
+ggsave("plots/SN_IN_MN_C.pdf", width = 15, height = 10, limitsize = FALSE, 
+       units = c("cm"), p3)
 ggsave("plots/SN_IN_MN.pdf", width = 30, height = 10, limitsize = FALSE, 
        units = c("cm"), arrange)
 }
@@ -179,40 +222,21 @@ ggsave("plots/SN_IN_MN_E.pdf", width = 10, height = 10, limitsize = FALSE,
 library("cowplot")
 arrange2 <- 
   ggdraw() +
-  draw_plot(p1, x = 0, y = 0.5, width = .5, height = .5) +
-  draw_plot(p2, x = .5, y = 0.5, width = .5, height = .5) +
-  draw_plot(syn1, x = 0, y = -0.02, width = .3, height = 0.5) +
-  draw_plot(syn2, x = 0.33, y = -0.02, width = .3, height = 0.5) +
-  draw_plot(syn3, x = 0.66, y = -0.02, width = .3, height = 0.5) +
-  draw_plot_label(label = c("A", "B", "C", "D", "E"), size = 15,
-                  x = c(0, 0.5, 0,0.33,0.66), y = c(1.01, 1.01, 0.49,0.49,0.49), fontface = "plain")+
-  theme(plot.margin = unit(c(1,0,2,0), "mm")) #set margins, top, right, bottom, left
+  draw_plot(p2, x = 0, y = 0.5, width = .5, height = .5) +
+  draw_plot(p1, x = .5, y = 0.5, width = .5, height = .5) +
+  draw_plot(p3, x = 1, y = 0.5, width = .5, height = .5) +
+  draw_plot(syn1, x = 0, y = -0.02, width = .4, height = 0.5) +
+  draw_plot(syn2, x = 0.5, y = -0.02, width = .4, height = 0.5) +
+  draw_plot(syn3, x = 1, y = -0.02, width = .4, height = 0.5) +
+  draw_plot_label(label = c("A", "B", "C", "D", "E", "F"), size = 15,
+                  x = c(0, 0.49, 0.99, 0,0.49,0.99), y = c(1.01, 1.01,1.01, 0.49,0.49,0.49), fontface = "plain")+
+  theme(plot.margin = unit(c(1,134,2,0), "mm")) #set margins, top, right, bottom, left
 
 
 # Saving R ggplot with R ggsave Function
-ggsave("figures/SN_IN_MN_synapses.pdf", width = 30, height = 19, limitsize = FALSE, 
+ggsave("figures/SN_IN_MN_synapses.pdf", width = 40, height = 19, limitsize = FALSE, 
        units = c("cm"), arrange2)
 }
 
 
 
-#########################################################
-#plot branch numbers
-
-SN_IN_MN$Neuron[1:10]
-
-ggplot(SN_IN_MN) +
-  aes(x = Smooth.cable..nm./1000, y = N.branch.nodes, colour = neuron_type,
-      shape=neuron_type, size = total_synapses, alpha=neuron_type) +
-  # geom_point(shape = "circle") + 
-  geom_jitter(stroke=0, width=0, height = 0.01)+
-  scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
-                                   `sensory neuron` = "#E69F00")) +
-  scale_alpha_manual(values=c(0.5,0.8,1)) +
-  scale_size_area(max_size=6)+
-  ylim(0,400)+
-  labs(x='Cable length (µm)', y='number of branch nodes')+
-  scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,500,1000,2000))+   #change "log10" to "identity" to remove log scale
-  theme_minimal()+
-  geom_text(data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-    aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')
