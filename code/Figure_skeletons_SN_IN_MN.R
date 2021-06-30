@@ -54,7 +54,11 @@ p1 <- ggplot(SN_IN_MN) +
     scale_size_area(max_size=6)+
     labs(x='Cable length (µm)', y='Ratio (I-O) / (I+O)')+
     scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,1000,2000))+   #change "log10" to "identity" to remove log scale
-    theme_minimal()
+    theme_minimal()+
+    geom_text( 
+      data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
+      aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black'
+    )
 
 p2 <- ggplot(SN_IN_MN) +
   aes(x = Smooth.cable..nm./1000, y = in_out_ratio, colour = neuron_type,
@@ -67,7 +71,11 @@ p2 <- ggplot(SN_IN_MN) +
   scale_size_area(max_size=6)+
   labs(x='Cable length (µm)', y='Ratio (I-O) / (I+O)')+
   scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,1000,2000))+   #change "log10" to "identity" to remove log scale
-  theme_minimal()
+  theme_minimal()+
+  geom_text( 
+    data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
+    aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black'
+  )
 
 #to plot multiple plots use
 library(ggpubr)
@@ -206,8 +214,5 @@ ggplot(SN_IN_MN) +
   labs(x='Cable length (µm)', y='number of branch nodes')+
   scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,500,1000,2000))+   #change "log10" to "identity" to remove log scale
   theme_minimal()+
-  geom_text( 
-    data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-    aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black'
-  )
-
+  geom_text(data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
+    aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')
