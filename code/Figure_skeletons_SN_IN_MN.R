@@ -4,11 +4,11 @@
 
 library(tidyverse)
 library(ggplot2)
-setwd('/Users/gj274/OneDrive\ -\ University\ of\ Exeter/Paper/Connectome/Figures/Figure_skeleton_stats_SN_IN_MN/')
+setwd('.')
 
-SN <- read.csv2('SN_skeleton_measurements.csv', sep = ",")
-IN <- read.csv2('IN_skeleton_measurements.csv', sep = ",")
-MN <- read.csv2('MN_skeleton_measurements.csv', sep = ",")
+SN <- read.csv2('data/SN_skeleton_measurements.csv', sep = ",")
+IN <- read.csv2('data/IN_skeleton_measurements.csv', sep = ",")
+MN <- read.csv2('data/MN_skeleton_measurements.csv', sep = ",")
 
 SN <- as_tibble(SN)
 IN <- as_tibble(IN)
@@ -30,20 +30,36 @@ SN_IN_MN <- mutate(SN_IN_MN, in_out_ratio = (N.inputs-N.outputs)/(N.inputs+N.out
 
 SN_IN_MN
 
-{
-p1 <- ggplot(data=SN_IN_MN, mapping = aes(x=Smooth.cable..nm./1000, y=in_out_ratio, color=neuron_type, shape=neuron_type, size=N.inputs)) +
-  geom_jitter(stroke=0, alpha=0.6, width=0, height = 0.01)+
-  scale_x_continuous(trans = "log10",  limits=c(50,3000), breaks=c(100,1000,3000))+   #change "log10" to "identity" to remove log scale
-  theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
-  labs(x='Cable length (µm)', y='Ratio (I-O) / (I+O)')+
-  scale_size_area(max_size=6)
 
-p2 <- ggplot(data=SN_IN_MN, mapping = aes(x=Smooth.cable..nm./1000, y=in_out_ratio, color=neuron_type, shape=neuron_type, size=N.outputs)) +
+library(ggplot2)
+
+
+
+
+{
+p1 <- ggplot(SN_IN_MN) +
+    aes(x = Smooth.cable..nm./1000, y = in_out_ratio, colour = neuron_type,
+        shape=neuron_type, size = N.inputs) +
+    # geom_point(shape = "circle") + 
+    geom_jitter(stroke=0, alpha=0.6, width=0, height = 0.01)+
+    scale_color_manual(values = list(interneuron = "#E69F00", motoneuron = "#009E73", 
+                                     `sensory neuron` = "#0072B2")) +
+    scale_size_area(max_size=6)+
+    labs(x='Cable length (µm)', y='Ratio (I-O) / (I+O)')+
+    scale_x_continuous(trans = "log10",  limits=c(50,3000), breaks=c(100,1000,3000))+   #change "log10" to "identity" to remove log scale
+    theme_minimal()
+
+p2 <- ggplot(SN_IN_MN) +
+  aes(x = Smooth.cable..nm./1000, y = in_out_ratio, colour = neuron_type,
+      shape=neuron_type, size = N.outputs) +
+  # geom_point(shape = "circle") + 
   geom_jitter(stroke=0, alpha=0.6, width=0, height = 0.01)+
-  scale_x_continuous(trans = "log10",  limits=c(50,3000), breaks=c(100,1000,3000))+   #change "log10" to "identity" to remove log scale
-  theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
+  scale_color_manual(values = list(interneuron = "#E69F00", motoneuron = "#009E73", 
+                                   `sensory neuron` = "#0072B2")) +
+  scale_size_area(max_size=6)+
   labs(x='Cable length (µm)', y='Ratio (I-O) / (I+O)')+
-  scale_size_area(max_size=6) 
+  scale_x_continuous(trans = "log10",  limits=c(50,3000), breaks=c(100,1000,3000))+   #change "log10" to "identity" to remove log scale
+  theme_minimal()
 
 #to plot multiple plots use
 library(ggpubr)
@@ -51,7 +67,7 @@ ggarrange(p1, p2, ncol = 2, nrow = 1, labels  = "AUTO", hjust = c(0, 0), font.la
 
 arrange <- ggarrange(p1, p2, ncol = 2, nrow = 1, labels  = "AUTO", hjust = c(0, 0), font.label = list(size = 14, face = "plain", family = 'sans'))
 # Saving R ggplot with R ggsave Function
-ggsave("SN_IN_MN.pdf", width = 30, height = 10, limitsize = FALSE, 
+ggsave("plots/SN_IN_MN.pdf", width = 30, height = 10, limitsize = FALSE, 
        units = c("cm"), arrange)
 }
 
@@ -62,12 +78,12 @@ ggsave("SN_IN_MN.pdf", width = 30, height = 10, limitsize = FALSE,
 
 #synapse distribution plots
 
-SN_in <- read.csv2('SN_Radial_density_of_input_synapses.csv', sep = ",")
-SN_out <- read.csv2('SN_Radial_density_of_output_synapses.csv', sep = ",")
-IN_in <- read.csv2('IN_Radial_density_of_input_synapses.csv', sep = ",")
-IN_out <- read.csv2('IN_Radial_density_of_output_synapses.csv', sep = ",")
-MN_in <- read.csv2('MN_Radial_density_of_input_synapses.csv', sep = ",")
-MN_out <- read.csv2('MN_Radial_density_of_output_synapses.csv', sep = ",")
+SN_in <- read.csv2('data/SN_Radial_density_of_input_synapses.csv', sep = ",")
+SN_out <- read.csv2('data/SN_Radial_density_of_output_synapses.csv', sep = ",")
+IN_in <- read.csv2('data/IN_Radial_density_of_input_synapses.csv', sep = ",")
+IN_out <- read.csv2('data/IN_Radial_density_of_output_synapses.csv', sep = ",")
+MN_in <- read.csv2('data/MN_Radial_density_of_input_synapses.csv', sep = ",")
+MN_out <- read.csv2('data/MN_Radial_density_of_output_synapses.csv', sep = ",")
 
 
 #combine data into a dat.frame and add NA values to the end of the rows to bring them to the same 175 length
@@ -88,47 +104,47 @@ SN_IN_MN_in_out_tb
 {
 syn1 <- ggplot(data=SN_IN_MN_in_out_tb)+
   stat_smooth(mapping = aes(x=distance_from_soma, y=IN_in), color='grey95', alpha=0.3, span=0.1)+
-  geom_line(mapping = aes(x=distance_from_soma, y=IN_in), color='red', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
-  geom_point(mapping = aes(x=distance_from_soma, y=IN_in), color='red', alpha=0.5, shape=17)+
+  geom_line(mapping = aes(x=distance_from_soma, y=IN_in), color='#D55E00', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+  geom_point(mapping = aes(x=distance_from_soma, y=IN_in), color='#D55E00', alpha=0.5, shape=17)+
   stat_smooth(mapping = aes(x=distance_from_soma, y=IN_out), color='grey95', alpha=0.3, span=0.1)+
-  geom_line(mapping = aes(x=distance_from_soma, y=IN_out), color='blue', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
-  geom_point(mapping = aes(x=distance_from_soma, y=IN_out), color='blue', alpha=0.5, shape=1)+
+  geom_line(mapping = aes(x=distance_from_soma, y=IN_out), color='#0072B2', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+  geom_point(mapping = aes(x=distance_from_soma, y=IN_out), color='#0072B2', alpha=0.5, shape=1)+
   theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
   ylim(0,0.55)+
   labs(x='distance from soma (µm)', y='mean synapse number')+
   draw_plot_label(label = "interneurons", size = 12, x = 20, y=0.55, fontface = "plain")+
-  draw_plot_label(label = "incoming", size = 12, x = 3, y=0.4, fontface = "plain", color='red', alpha=0.6)+
-  draw_plot_label(label = "outgoing", size = 12, x = 15, y=0.3, fontface = "plain", color='blue', alpha=0.6)
+  draw_plot_label(label = "incoming", size = 12, x = 3, y=0.4, fontface = "plain", color='#D55E00', alpha=0.6)+
+  draw_plot_label(label = "outgoing", size = 12, x = 15, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)
 
 
 syn2 <- ggplot(data=SN_IN_MN_in_out_tb)+
   stat_smooth(mapping = aes(x=distance_from_soma, y=MN_in), color='grey95', alpha=0.3, span=0.1)+
-  geom_line(mapping = aes(x=distance_from_soma, y=MN_in), color='red', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
-  geom_point(mapping = aes(x=distance_from_soma, y=MN_in), color='red', alpha=0.5, shape=17)+
+  geom_line(mapping = aes(x=distance_from_soma, y=MN_in), color='#D55E00', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+  geom_point(mapping = aes(x=distance_from_soma, y=MN_in), color='#D55E00', alpha=0.5, shape=17)+
   stat_smooth(mapping = aes(x=distance_from_soma, y=MN_out), color='grey95', alpha=0.3, span=0.1)+
-  geom_line(mapping = aes(x=distance_from_soma, y=MN_out), color='blue', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
-  geom_point(mapping = aes(x=distance_from_soma, y=MN_out), color='blue', alpha=0.5, shape=1)+
+  geom_line(mapping = aes(x=distance_from_soma, y=MN_out), color='#0072B2', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+  geom_point(mapping = aes(x=distance_from_soma, y=MN_out), color='#0072B2', alpha=0.5, shape=1)+
   theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
   ylim(0,0.55)+
   labs(x='distance from soma (µm)', y='mean synapse number')+
   draw_plot_label(label = "motoneurons", size = 12, x = 35, y=0.55, fontface = "plain")+
-  draw_plot_label(label = "incoming", size = 12, x = 25, y=0.2, fontface = "plain", color='red', alpha=0.6)+
-  draw_plot_label(label = "outgoing", size = 12, x = 76, y=0.3, fontface = "plain", color='blue', alpha=0.6)
+  draw_plot_label(label = "incoming", size = 12, x = 25, y=0.2, fontface = "plain", color='#D55E00', alpha=0.6)+
+  draw_plot_label(label = "outgoing", size = 12, x = 76, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)
 
 
 syn3 <- ggplot(data=SN_IN_MN_in_out_tb)+
   stat_smooth(mapping = aes(x=distance_from_soma, y=SN_in), color='grey95', alpha=0.3, span=0.1)+
-  geom_line(mapping = aes(x=distance_from_soma, y=SN_in), color='red', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
-  geom_point(mapping = aes(x=distance_from_soma, y=SN_in), color='red', alpha=0.5, shape=17)+
+  geom_line(mapping = aes(x=distance_from_soma, y=SN_in), color='#D55E00', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+  geom_point(mapping = aes(x=distance_from_soma, y=SN_in), color='#D55E00', alpha=0.5, shape=17)+
   stat_smooth(mapping = aes(x=distance_from_soma, y=SN_out), color='grey95', alpha=0.3, span=0.1)+
-  geom_line(mapping = aes(x=distance_from_soma, y=SN_out), color='blue', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
-  geom_point(mapping = aes(x=distance_from_soma, y=SN_out), color='blue', alpha=0.5, shape=1)+
+  geom_line(mapping = aes(x=distance_from_soma, y=SN_out), color='#0072B2', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+  geom_point(mapping = aes(x=distance_from_soma, y=SN_out), color='#0072B2', alpha=0.5, shape=1)+
   theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
   ylim(0,0.55)+
   labs(x='distance from soma (µm)', y='mean synapse number')+
   draw_plot_label(label = "sensory neurons", size = 12, x = 2, y=0.55, fontface = "plain")+
-  draw_plot_label(label = "incoming", size = 12, x = -2, y=0.03, fontface = "plain", color='red', alpha=0.6)+
-  draw_plot_label(label = "outgoing", size = 12, x = 24, y=0.3, fontface = "plain", color='blue', alpha=0.6)
+  draw_plot_label(label = "incoming", size = 12, x = -2, y=0.03, fontface = "plain", color='#D55E00', alpha=0.6)+
+  draw_plot_label(label = "outgoing", size = 12, x = 24, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)
 
 
 
