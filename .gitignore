@@ -4,3 +4,6 @@
 .Ruserdata
 *.pdf
 *.png
+.RData
+.Rhistory
+.DS_Store
