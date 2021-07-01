@@ -118,22 +118,35 @@ p3 <- ggplot(SN_IN_MN) +
         alpha = guide_legend("neuron type"), 
         colour = guide_legend(override.aes = list(size = 4), 'neuron type'))
 
-#to plot multiple plots use
-library(ggpubr)
-ggarrange(p1, p2, p3, ncol = 3, nrow = 1, labels  = "AUTO", hjust = c(0, 0), font.label = list(size = 14, face = "plain", family = 'sans'))
+#plot branch numbers
+p4 <- ggplot(SN_IN_MN) +
+  aes(x = Smooth.cable..nm./1000, y = total_synapses, colour = neuron_type,
+      shape=neuron_type, size = total_synapses, alpha=neuron_type) +
+  # geom_point(shape = "circle") + 
+  geom_jitter(stroke=0, width=0, height = 0.01)+
+  scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
+                                   `sensory neuron` = "#E69F00")) +
+  scale_alpha_manual(values=c(0.5,0.8,1)) +
+  scale_size_area(max_size=6)+
+  ylim(0,475)+
+  labs(x='Cable length (µm)', y='number of synapses')+
+  scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,500,1000,2000))+   #change "log10" to "identity" to remove log scale
+  theme_minimal()+
+  geom_text(data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
+            aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+  guides(size = guide_legend('all synapses'), colour="none", shape="none", alpha="none")
 
-arrange <- ggarrange(p2, p1, p3, ncol = 3, nrow = 1, labels  = "AUTO", hjust = c(0, 0), font.label = list(size = 14, face = "plain", family = 'sans'))
-# Saving R ggplot with R ggsave Function
+
+# Saving plots with R ggsave Function
 ggsave("plots/SN_IN_MN_A.pdf", width = 15, height = 10, limitsize = FALSE, 
        units = c("cm"), p1)
 ggsave("plots/SN_IN_MN_B.pdf", width = 15, height = 10, limitsize = FALSE, 
        units = c("cm"), p2)
 ggsave("plots/SN_IN_MN_C.pdf", width = 15, height = 10, limitsize = FALSE, 
        units = c("cm"), p3)
-ggsave("plots/SN_IN_MN.pdf", width = 30, height = 10, limitsize = FALSE, 
-       units = c("cm"), arrange)
+ggsave("plots/SN_IN_MN_D.pdf", width = 15, height = 10, limitsize = FALSE, 
+       units = c("cm"), p4)
 }
-
 
 
 
@@ -163,6 +176,8 @@ SN_IN_MN_in_out_tb <- mutate(SN_IN_MN_in_out_tb, distance_from_soma = c(0:174))
 
 SN_IN_MN_in_out_tb
 }
+
+
 
 {
 syn1 <- ggplot(data=SN_IN_MN_in_out_tb)+
@@ -225,18 +240,22 @@ arrange2 <-
   draw_plot(p2, x = 0, y = 0.5, width = .5, height = .5) +
   draw_plot(p1, x = .5, y = 0.5, width = .5, height = .5) +
   draw_plot(p3, x = 1, y = 0.5, width = .5, height = .5) +
-  draw_plot(syn1, x = 0, y = -0.02, width = .4, height = 0.5) +
-  draw_plot(syn2, x = 0.5, y = -0.02, width = .4, height = 0.5) +
-  draw_plot(syn3, x = 1, y = -0.02, width = .4, height = 0.5) +
-  draw_plot_label(label = c("A", "B", "C", "D", "E", "F"), size = 15,
-                  x = c(0, 0.49, 0.99, 0,0.49,0.99), y = c(1.01, 1.01,1.01, 0.49,0.49,0.49), fontface = "plain")+
+  draw_plot(p4, x = 0, y = -0.02, width = .5, height = .5) +
+  draw_plot(syn1, x = 0.5, y = -0.02, width = .3, height = 0.5) +
+  draw_plot(syn2, x = 0.83, y = -0.02, width = .3, height = 0.5) +
+  draw_plot(syn3, x = 1.16, y = -0.02, width = .3, height = 0.5) +
+  draw_plot_label(label = c("A", "B", "C", "D", "E", "F", "G"), size = 15,
+                  x = c(0, 0.49, 0.99, 0, 0.49,0.82,1.15), y = c(1.01, 1.01,1.01, 0.49,0.49,0.49,0.49), fontface = "plain")+
   theme(plot.margin = unit(c(1,134,2,0), "mm")) #set margins, top, right, bottom, left
 
 
 # Saving R ggplot with R ggsave Function
 ggsave("figures/SN_IN_MN_synapses.pdf", width = 40, height = 19, limitsize = FALSE, 
        units = c("cm"), arrange2)
+ggsave("figures/SN_IN_MN_synapses.png", width = 40, height = 19, limitsize = FALSE, 
+       units = c("cm"), arrange2)
 }
+
 
 
 
