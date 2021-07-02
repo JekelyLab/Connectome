@@ -132,10 +132,34 @@ heatmaply(sqrt(synapse_matrix),
     )
 dev.off()
 
-write.csv(synapse_matrix, file = "Left_right_celltype_connectivity_matrix.csv",
-          quote = FALSE,
-          eol = "\n", na = "NA",
-          fileEncoding = "")
+#plot the same with ggplot
+synapse_matrix
+#plot as dot plot
+synapse_matrix_sqr_tb <- as.data.frame((sqrt(synapse_matrix))) %>%
+  rownames_to_column(var = "presyn")%>%
+  pivot_longer(-presyn, names_to = "postsyn", values_to = "synapses")%>%
+  group_by(postsyn)%>%
+  mutate(percent_presyn =  synapses / sum(synapses, na.rm = TRUE))
+
+
+
+#alternative visualisation with ggplot (not used in figure)  
+library(ggplot2)
+ggplot(synapse_matrix_sqr_tb) +
+  aes(x = postsyn, y = presyn, colour = percent_presyn) +
+  geom_point(size=0.3) +
+  scale_color_gradient2(low = "white",
+                        mid = "#56B4E9",
+                        high = "#D55E00",
+                        midpoint = 0.5,
+                       na.value = "white",
+                       guide = "colourbar") +
+  theme_minimal()+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+  theme(axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())+
+  labs(x='postsynaptic cell types', y='presynaptic cell types')
 
 
 ##########################################
