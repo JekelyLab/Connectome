@@ -8,7 +8,7 @@ setwd('.')
 
 #select some colorblind friendly color combinations
 # Taken mostly from https://tradeblotter.wordpress.com/2013/02/28/the-paul-tol-21-color-salute/
-Color blind friendly palettes
+#Color blind friendly palettes
 ########## DEFINE Color palettes #########
 #From Paul Tol: https://personal.sron.nl/~pault/
 Tol_bright <- c('#EE6677', '#228833', '#4477AA', '#CCBB44', '#66CCEE', '#AA3377', '#BBBBBB')
