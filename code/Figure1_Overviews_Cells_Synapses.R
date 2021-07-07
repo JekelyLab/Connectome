@@ -33,7 +33,7 @@ yolk <- catmaid_get_volume(4, rval = c("mesh3d", "catmaidmesh", "raw"),
 
 #for larger calls we need to use http/1, see https://www.gitmemory.com/issue/natverse/rcatmaid/158/641537466
 #for this we configure to http/1.1
-conn_http1 = catmaid_login(conn=conn, config=httr::config(ssl_verifypeer=0, http_version=1.1))
+conn_http1 = catmaid_login(conn=conn, config=httr::config(ssl_verifypeer=0, http_version=1))
 
 #catmaid_get_connector_table("^connectome$", pid= 11, direction = "incoming", conn = conn_http1)
 
@@ -52,8 +52,8 @@ chaeta = nlapply(read.neurons.catmaid("^chaeta$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
 acicula = nlapply(read.neurons.catmaid("^acicula$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
-muscle = nlapply(read.neurons.catmaid("^muscle$", pid=11),
-                function(x) smooth_neuron(x, sigma=6000), conn = conn_http1)
+muscle = nlapply(read.neurons.catmaid("^muscle$", pid=11, conn = conn_http1),
+                function(x) smooth_neuron(x, sigma=6000))
 endoderm = nlapply(read.neurons.catmaid("^endoderm$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
 epithelia = nlapply(read.neurons.catmaid("^epithelia_cell$", pid=11, conn = conn_http1),
@@ -67,11 +67,11 @@ glia = nlapply(read.neurons.catmaid("^glia cell$", pid=11),
 pnb = nlapply(read.neurons.catmaid("^pnb$", pid=11, conn = conn_http1),
                 function(x) smooth_neuron(x, sigma=6000))
 #these four dots are the most extreme points of the volume, adding them to the 3d view solves the problem with automatic zooming and movement of the field shown
-bounding_dots = nlapply(read.neurons.catmaid("^bounding_dots$"),
+bounding_dots = nlapply(read.neurons.catmaid("^bounding_dots$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
 
 #check if there are any cells with two or more tagged somas
-sum = summary(connectome)
+sum = summary(pnb)
 sum[sum$nsoma!=1,]
 as.numeric(rownames(sum[sum$nsoma==2,]))
 
@@ -79,44 +79,59 @@ as.numeric(rownames(sum[sum$nsoma==2,]))
 # 3d plotting
 #########################################
 
+plot_background <- function(x){
 nopen3d() # opens apannable 3d window
 mfrow3d(1, 1)  #defines the two scenes
 par3d(windowRect = c(20, 30, 800, 800)) #to define the size of the rgl window
 nview3d("ventral", extramat=rotationMatrix(0, 1, 0, 0))
 par3d(zoom=0.72)
-
-
-
 plot3d(bounding_dots, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
-       col="white"
-) 
-
-
+       col="white") 
 plot3d(yolk, WithConnectors = F, WithNodes = F, soma=F, lwd=2,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.1,
-       col="#E2E2E2"
-) 
-
-rgl.snapshot("connectome_body_1.png")
-
+       col="#E2E2E2") 
 plot3d(acicula, WithConnectors = F, WithNodes = F, soma=T, lwd=3,
-       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
-       col="black"
-) 
-rgl.snapshot("connectome_body_2.png")
-
+       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.4,
+       col="black")
 plot3d(chaeta, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
-       col="grey"
-) 
-rgl.snapshot("connectome_body_3.png")
+       col="grey") 
+}
+
+
+#extract connectors to be able to plot them by unique colours
+SN_conn <- connectors(Sensoryneuron)
+str(SN_conn)
+presyn_SN_conn <- SN_conn[SN_conn$prepost == 0,]
+postsyn_SN_conn <- SN_conn[SN_conn$prepost == 1,]
+
+IN_conn <- connectors(Interneuron)
+presyn_IN_conn <- IN_conn[IN_conn$prepost == 0,]
+postsyn_IN_conn <- IN_conn[IN_conn$prepost == 1,]
+
+MN_conn <- connectors(Interneuron)
+presyn_MN_conn <- MN_conn[MN_conn$prepost == 0,]
+postsyn_MN_conn <- MN_conn[MN_conn$prepost == 1,]
+
+
+#cb friendly colour codes interneuron = "#CC79A7", motoneuron = "#0072B2",  `sensory neuron` = "#E69F00"
+plot_background()
+#plot only the presyn connectors
+plot3d(presyn_SN_conn$x, presyn_SN_conn$y, presyn_SN_conn$z, add = TRUE, size=6, alpha=0.5, col= "#E69F00")
+plot3d(presyn_IN_conn$x, presyn_IN_conn$y, presyn_IN_conn$z, add = TRUE, size=6, alpha=0.5, col= "#CC79A7")
+plot3d(presyn_MN_conn$x, presyn_MN_conn$y, presyn_MN_conn$z, add = TRUE, size=6, alpha=0.5, col= "#0072B2")
+
+
+
+
+#plot only the postsyn connectors
+plot3d(postsyn_SN_conn$x, postsyn_SN_conn$y, postsyn_SN_conn$z, add = TRUE, col = 'cyan', size=6, alpha=0.5)
+
 
 plot3d(gland, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
-       col="grey"
-) 
-rgl.snapshot("connectome_body_3b.png")
+       col="grey")
 
 plot3d(Ciliary_band_cell, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
