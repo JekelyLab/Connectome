@@ -38,7 +38,7 @@ conn_http1 = catmaid_login(conn=conn, config=httr::config(ssl_verifypeer=0, http
 #catmaid_get_connector_table("^connectome$", pid= 11, direction = "incoming", conn = conn_http1)
 
 #read cells
-neurons = nlapply(read.neurons.catmaid("^connectome_neuron$", pid=11, conn = conn_http1),
+{neurons = nlapply(read.neurons.catmaid("^connectome_neuron$", pid=11, conn = conn_http1),
                 function(x) smooth_neuron(x, sigma=6000))
 connectome = nlapply(read.neurons.catmaid("^connectome$", pid=11, conn = conn_http1),
                 function(x) smooth_neuron(x, sigma=6000))
@@ -69,6 +69,7 @@ pnb = nlapply(read.neurons.catmaid("^pnb$", pid=11, conn = conn_http1),
 #these four dots are the most extreme points of the volume, adding them to the 3d view solves the problem with automatic zooming and movement of the field shown
 bounding_dots = nlapply(read.neurons.catmaid("^bounding_dots$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
+}
 
 #check if there are any cells with two or more tagged somas
 sum = summary(pnb)
@@ -86,22 +87,22 @@ par3d(windowRect = c(20, 30, 800, 800)) #to define the size of the rgl window
 nview3d("ventral", extramat=rotationMatrix(0, 1, 0, 0))
 par3d(zoom=0.72)
 plot3d(bounding_dots, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
-       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
+       rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=1,
        col="white") 
 plot3d(yolk, WithConnectors = F, WithNodes = F, soma=F, lwd=2,
-       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.1,
+       rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=0.1,
        col="#E2E2E2") 
 plot3d(acicula, WithConnectors = F, WithNodes = F, soma=T, lwd=3,
-       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.4,
+       rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=0.3,
        col="black")
 plot3d(chaeta, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
-       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
+       rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=0.5,
        col="grey") 
 }
 
 
 #extract connectors to be able to plot them by unique colours
-SN_conn <- connectors(Sensoryneuron)
+{SN_conn <- connectors(Sensoryneuron)
 str(SN_conn)
 presyn_SN_conn <- SN_conn[SN_conn$prepost == 0,]
 postsyn_SN_conn <- SN_conn[SN_conn$prepost == 1,]
@@ -110,24 +111,27 @@ IN_conn <- connectors(Interneuron)
 presyn_IN_conn <- IN_conn[IN_conn$prepost == 0,]
 postsyn_IN_conn <- IN_conn[IN_conn$prepost == 1,]
 
-MN_conn <- connectors(Interneuron)
-presyn_MN_conn <- MN_conn[MN_conn$prepost == 0,]
-postsyn_MN_conn <- MN_conn[MN_conn$prepost == 1,]
-
+#we can also subset with the subset shorthand function  
+MN_conn <- connectors(Motorneuron)
+presyn_MN_conn <- subset(MN_conn, prepost == 0)
+postsyn_MN_conn <- subset(MN_conn, prepost == 1)
+}
 
 #cb friendly colour codes interneuron = "#CC79A7", motoneuron = "#0072B2",  `sensory neuron` = "#E69F00"
-plot_background()
+{plot_background()
 #plot only the presyn connectors
-plot3d(presyn_SN_conn$x, presyn_SN_conn$y, presyn_SN_conn$z, add = TRUE, size=6, alpha=0.5, col= "#E69F00")
-plot3d(presyn_IN_conn$x, presyn_IN_conn$y, presyn_IN_conn$z, add = TRUE, size=6, alpha=0.5, col= "#CC79A7")
-plot3d(presyn_MN_conn$x, presyn_MN_conn$y, presyn_MN_conn$z, add = TRUE, size=6, alpha=0.5, col= "#0072B2")
+plot3d(presyn_SN_conn$x, presyn_SN_conn$y, presyn_SN_conn$z, size=4, alpha=0.5, col="#E69F00", add=T)
+plot3d(presyn_MN_conn$x, presyn_MN_conn$y, presyn_MN_conn$z, size=4, alpha=0.5, col="#0072B2", add=T)
+plot3d(presyn_IN_conn$x+1, presyn_IN_conn$y, presyn_IN_conn$z, size=4, alpha=0.5, col="#CC79A7", add=T)
+par3d(zoom=0.56)
+}
+
+
+clear3d()
 
 
 
-
-#plot only the postsyn connectors
-plot3d(postsyn_SN_conn$x, postsyn_SN_conn$y, postsyn_SN_conn$z, add = TRUE, col = 'cyan', size=6, alpha=0.5)
-
+clear3d()
 
 plot3d(gland, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
@@ -144,20 +148,10 @@ plot3d(muscle, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
     col=hcl.colors(1200, palette='Reds')
    )
 
-#plot3d(hckcs_mus, k=500, db=muscle, WithConnectors = F, WithNodes = F, soma=F, lwd=1,rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
-#       col=hcl.colors(900, palette='Reds'))
-
-rgl.snapshot("connectome_body_5.png")
-
-plot3d(hckcs, k=500, db=neurons, WithConnectors = T, WithNodes = F, soma=F, lwd=1,
-       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0,
-) 
-rgl.snapshot("connectome_all_neurons_6.png")
 
 plot3d(glia, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
        col=hcl.colors(95, palette='Peach'))
-rgl.snapshot("connectome_body_7.png")
 
 plot3d(pnb, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.2,
