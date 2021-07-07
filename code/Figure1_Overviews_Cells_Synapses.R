@@ -4,7 +4,7 @@
 
 rm(list = ls(all.names = TRUE)) #will clear all objects includes hidden objects.
 gc() #free up memrory and report the memory usage.
-Sys.setenv('R_MAX_VSIZE'=80000000000)
+Sys.setenv('R_MAX_VSIZE'=8000000000)
 
 # load nat and all associated packages, incl catmaid
 library(natverse)
@@ -38,9 +38,8 @@ conn_http1 = catmaid_login(conn=conn, config=httr::config(ssl_verifypeer=0, http
 #catmaid_get_connector_table("^connectome$", pid= 11, direction = "incoming", conn = conn_http1)
 
 #read cells
-neurons = nlapply(read.neurons.catmaid("^connectome_neuron$", pid=11),
-                  function(x) smooth_neuron(x, sigma=6000), conn = conn_http1)
-
+neurons = nlapply(read.neurons.catmaid("^connectome_neuron$", pid=11, conn = conn_http1),
+                function(x) smooth_neuron(x, sigma=6000))
 connectome = nlapply(read.neurons.catmaid("^connectome$", pid=11, conn = conn_http1),
                 function(x) smooth_neuron(x, sigma=6000))
 Sensoryneuron = nlapply(read.neurons.catmaid("^connectome_Sensory_neuron$", pid=11),
@@ -57,24 +56,22 @@ muscle = nlapply(read.neurons.catmaid("^muscle$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000), conn = conn_http1)
 endoderm = nlapply(read.neurons.catmaid("^endoderm$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
-epithelia = nlapply(read.neurons.catmaid("^epithelia_cell$", pid=11),
-                function(x) smooth_neuron(x, sigma=6000), conn = conn_http1)
+epithelia = nlapply(read.neurons.catmaid("^epithelia_cell$", pid=11, conn = conn_http1),
+                function(x) smooth_neuron(x, sigma=6000))
 gland = nlapply(read.neurons.catmaid("^gland cell$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
 Ciliary_band_cell = nlapply(read.neurons.catmaid("^Ciliary_band_cell$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
 glia = nlapply(read.neurons.catmaid("^glia cell$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
-
-pnb = nlapply(read.neurons.catmaid("^pnb$", pid=11, 
-                                    fetch.annotations = T), function(x) smooth_neuron(x, sigma=6000))
-
+pnb = nlapply(read.neurons.catmaid("^pnb$", pid=11, conn = conn_http1),
+                function(x) smooth_neuron(x, sigma=6000))
 #these four dots are the most extreme points of the volume, adding them to the 3d view solves the problem with automatic zooming and movement of the field shown
-bounding_dots = nlapply(read.neurons.catmaid("^bounding_dots$", pid=11, 
-                                                                   fetch.annotations = T), function(x) smooth_neuron(x, sigma=6000))
+bounding_dots = nlapply(read.neurons.catmaid("^bounding_dots$"),
+                function(x) smooth_neuron(x, sigma=6000))
 
 #check if there are any cells with two or more tagged somas
-sum = summary(gland)
+sum = summary(connectome)
 sum[sum$nsoma!=1,]
 as.numeric(rownames(sum[sum$nsoma==2,]))
 
