@@ -18,18 +18,18 @@ require("graphics")
 # catmaid connection, needs username, password AND token - weird!
 # can run this separate file using source function
 conn <- source("~/R/conn.R")
-workdir <- "/Users/gj274/OneDrive\ -\ University\ of\ Exeter/Paper/Connectome/Figures/Figure1_overview/"
-setwd(workdir)
+
 
 #see the available volumes
 catmaid_get_volumelist(conn = NULL, pid = 11)
 
 #read volumes
+{
 outline <- catmaid_get_volume(1, rval = c("mesh3d", "catmaidmesh", "raw"),
   invertFaces = T, conn = NULL, pid = 11)
-
 yolk <- catmaid_get_volume(4, rval = c("mesh3d", "catmaidmesh", "raw"),
   invertFaces = T, conn = NULL, pid = 11)
+}
 
 #for larger calls we need to use http/1, see https://www.gitmemory.com/issue/natverse/rcatmaid/158/641537466
 #for this we configure to http/1.1
@@ -38,7 +38,7 @@ conn_http1 = catmaid_login(conn=conn, config=httr::config(ssl_verifypeer=0, http
 #catmaid_get_connector_table("^connectome$", pid= 11, direction = "incoming", conn = conn_http1)
 
 #read cells
-{neurons = nlapply(read.neurons.catmaid("^connectome_neuron$", pid=11, conn = conn_http1),
+neurons = nlapply(read.neurons.catmaid("^connectome_neuron$", pid=11, conn = conn_http1),
                 function(x) smooth_neuron(x, sigma=6000))
 connectome = nlapply(read.neurons.catmaid("^connectome$", pid=11, conn = conn_http1),
                 function(x) smooth_neuron(x, sigma=6000))
@@ -69,10 +69,11 @@ pnb = nlapply(read.neurons.catmaid("^pnb$", pid=11, conn = conn_http1),
 #these four dots are the most extreme points of the volume, adding them to the 3d view solves the problem with automatic zooming and movement of the field shown
 bounding_dots = nlapply(read.neurons.catmaid("^bounding_dots$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
-}
+
 
 #check if there are any cells with two or more tagged somas
 sum = summary(pnb)
+attributes(sum)
 sum[sum$nsoma!=1,]
 as.numeric(rownames(sum[sum$nsoma==2,]))
 
@@ -85,7 +86,7 @@ nopen3d() # opens apannable 3d window
 mfrow3d(1, 1)  #defines the two scenes
 par3d(windowRect = c(20, 30, 800, 800)) #to define the size of the rgl window
 nview3d("ventral", extramat=rotationMatrix(0, 1, 0, 0))
-par3d(zoom=0.72)
+par3d(zoom=0.63)
 plot3d(bounding_dots, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=1,
        col="white") 
@@ -117,85 +118,95 @@ presyn_MN_conn <- subset(MN_conn, prepost == 0)
 postsyn_MN_conn <- subset(MN_conn, prepost == 1)
 }
 
+#plot only the synapses coloured by SN MN IN
 #cb friendly colour codes interneuron = "#CC79A7", motoneuron = "#0072B2",  `sensory neuron` = "#E69F00"
 {plot_background()
 #plot only the presyn connectors
-plot3d(presyn_SN_conn$x, presyn_SN_conn$y, presyn_SN_conn$z, size=4, alpha=0.5, col="#E69F00", add=T)
-plot3d(presyn_MN_conn$x, presyn_MN_conn$y, presyn_MN_conn$z, size=4, alpha=0.5, col="#0072B2", add=T)
-plot3d(presyn_IN_conn$x+1, presyn_IN_conn$y, presyn_IN_conn$z, size=4, alpha=0.5, col="#CC79A7", add=T)
-par3d(zoom=0.56)
+plot3d(presyn_SN_conn$x, presyn_SN_conn$y, presyn_SN_conn$z, size=5, alpha=0.5, col="#E69F00", add=T)
+plot3d(presyn_MN_conn$x, presyn_MN_conn$y, presyn_MN_conn$z, size=5, alpha=0.5, col="#0072B2", add=T)
+plot3d(presyn_IN_conn$x+1, presyn_IN_conn$y, presyn_IN_conn$z, size=5, alpha=0.5, col="#CC79A7", add=T)
+par3d(windowRect = c(20, 30, 600, 800))
+par3d(zoom=0.48)
 }
+rgl.snapshot("figures/connectome_SN_IN_MN_synapses_ventral.png")
+
+#we define a z clipping plane for the frontal view
+{
+par3d(windowRect = c(20, 30, 800, 800)) #resize for frontal view
+nview3d("frontal", extramat=rotationMatrix(0.4, 1, 0.1, 0))
+clipplanes3d(0, 0, -1, 60000)
+par3d(zoom=0.63)
+}
+rgl.snapshot("figures/connectome_SN_IN_MN_synapses_frontal.png")
+close3d()
+
+#plot the cells with soma coloured by SN MN IN
+{
+plot_background()
+plot3d(Sensoryneuron, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
+       add=T, alpha=0.6, col="#E69F00")
+plot3d(Motorneuron, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
+       rev = FALSE, fixup = F, add=T, alpha=0.6, col="#0072B2",)
+plot3d(Interneuron, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
+       rev = FALSE, fixup = F, add=T, alpha=0.6, col="#CC79A7")
+par3d(windowRect = c(20, 30, 600, 800))
+par3d(zoom=0.48)
+}
+rgl.snapshot("figures/connectome_SN_IN_MN_cells_ventral.png")
+
+#we define a z clipping plane for the frontal view
+{
+nview3d("frontal", extramat=rotationMatrix(0.4, 1, 0.1, 0))
+clipplanes3d(0, 0, -1, 60000)
+par3d(windowRect = c(20, 30, 800, 800))
+par3d(zoom=0.63)
+}
+rgl.snapshot("figures/connectome_SN_IN_MN_cells_frontal.png")
+close3d()
+
+#plot the same cells without a soma
+{
+  plot_background()
+  plot3d(Sensoryneuron, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
+         add=T, alpha=0.6, col="#E69F00")
+  plot3d(Motorneuron, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
+         rev = FALSE, fixup = F, add=T, alpha=0.6, col="#0072B2",)
+  plot3d(Interneuron, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
+         rev = FALSE, fixup = F, add=T, alpha=0.6, col="#CC79A7")
+  par3d(windowRect = c(20, 30, 600, 800))
+  par3d(zoom=0.48)
+}
+rgl.snapshot("figures/connectome_SN_IN_MN_cells_nosoma_ventral.png")
+
+#we define a z clipping plane for the frontal view
+{
+  nview3d("frontal", extramat=rotationMatrix(0.4, 1, 0.1, 0))
+  clipplanes3d(0, 0, -1, 60000)
+  par3d(windowRect = c(20, 30, 800, 800))
+  par3d(zoom=0.63)
+}
+rgl.snapshot("figures/connectome_SN_IN_MN_cells_nosoma_frontal.png")
+close3d()
 
 
-clear3d()
-
-
-
-clear3d()
 
 plot3d(gland, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
        col="grey")
-
 plot3d(Ciliary_band_cell, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
-       col=hcl.colors(333, palette='RedOr', rev = T)
-) 
-rgl.snapshot("connectome_body_4.png")
-
+       col=hcl.colors(333, palette='RedOr', rev = T)) 
 plot3d(muscle, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
      rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
-    col=hcl.colors(1200, palette='Reds')
-   )
-
-
+    col=hcl.colors(1200, palette='Reds'))
 plot3d(glia, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=1,
        col=hcl.colors(95, palette='Peach'))
-
 plot3d(pnb, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.2,
-       col=hcl.colors(2200, palette='Mint', rev=T)
-) 
-rgl.snapshot("connectome_body_8.png")
-
+       col=hcl.colors(2200, palette='Mint', rev=T))
 plot3d(epithelia, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.3,
-       col=hcl.colors(1172, palette='Blues')
-) 
-rgl.snapshot("connectome_body_9.png")
+       col=hcl.colors(1172, palette='Blues')) 
+rgl.snapshot("connectome_body_all_cells_ventral.png")
 
-
-
-
-
-
-
-#plot3d(desmosome_connectome_new_non_muscle, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
-#       rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.4,
-#       col=hcl.colors(2000, palette='Blues')) 
-
-
-for (i in c(89:94)){
-  nview3d("ventral", extramat=rotationMatrix((pi/180)*2*i, 0, 0, 1))
-  Sys.sleep(15)
-  plot3d(epithelia, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
-         rev = FALSE, fixup = F, add=T, forceClipregion = TRUE, alpha=0.3,
-         col=hcl.colors(1172, palette='Blues')
-  ) 
-  filename <- paste("test_movie", formatC(i, digits = 1, flag = "0"), ".png", sep = "")
-  rgl.snapshot(filename)
-}
-(3.1414/180)*188
-
-#zoom in 
-nview3d("ventral", extramat=rotationMatrix(pi+0.15, 0, 0, 1))
-for (i in c(0:60)){
-  par3d(zoom=0.72-i/200)
-  filename <- paste("test_movie_zoom", formatC(i, digits = 1, flag = "0"), ".png", sep = "")
-  rgl.snapshot(filename)
-}
-
-
-#to save frames for a movie
-movie3d(spin3d(axis = c(0, 0, 10), rpm = 1), duration = 1, dir=workdir, convert = NULL, clean = NULL)
