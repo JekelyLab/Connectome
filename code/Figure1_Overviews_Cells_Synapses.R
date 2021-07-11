@@ -685,9 +685,7 @@ panel2 <- ggdraw() + draw_image(img2, scale = 1) +
              color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
   draw_label("ventral", x = 0.9, y = 0.1,  hjust=1,fontfamily = "sans", fontface = "plain",
              color = "black", size = 9, angle = 0, lineheight = 0.9, alpha = 1)
-panel3 <- ggdraw() + draw_image(img3, scale = 1.2) + 
-  draw_label("synapses", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
-             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+panel3 <- ggdraw() + draw_image(img3, scale = 1.2)  +
   draw_label("frontal", x = 0.9, y = 0.1,  hjust=1,fontfamily = "sans", fontface = "plain",
              color = "black", size = 9, angle = 0, lineheight = 0.9, alpha = 1)
 panel4 <- ggdraw() + draw_image(img4, scale = 1)
@@ -712,7 +710,9 @@ panel9 <- ggdraw() + draw_image(img9, scale = 1) +
 panel10 <- ggdraw() + draw_image(img10, scale = 1) + draw_label("SN", x = 0.93, y = 0.95, fontfamily = "sans", fontface = "plain",
                                                                 color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
   draw_label("left", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
-             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) 
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)  +
+  draw_label("neurons with soma", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)
 panel11 <- ggdraw() + draw_image(img11, scale = 1) + draw_label("SN", x = 0.93, y = 0.95, fontfamily = "sans", fontface = "plain",
                                                                 color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
   draw_label("MN", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
@@ -730,9 +730,7 @@ panel13 <- ggdraw() + draw_image(img13, scale = 1) + draw_label("SN", x = 0.93, 
   draw_label("IN", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
              color = "#CC79A7", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
   draw_label("MN", x = 0.93, y = 0.85, fontfamily = "sans", fontface = "plain",
-             color = "#0072B2", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
-  draw_label("synapses", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
-             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+             color = "#0072B2", size = 10, angle = 0, lineheight = 0.9, alpha = 1)  +
   draw_label("left", x = 0.9, y = 0.1, hjust=1,fontfamily = "sans", fontface = "plain",
              color = "black", size = 9, angle = 0, lineheight = 0.9, alpha = 1)
 }
@@ -817,13 +815,19 @@ library(ggplot2)
     scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
                                      `sensory neuron` = "#E69F00")) +
     scale_alpha_manual(values=c(0.5,0.8,1)) +
-    scale_size_area(max_size=6)+
+    scale_size_area(max_size=3)+
     labs(x='Cable length (µm)', y='Ratio (I-O) / (I+O)')+
     scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,1000,2000))+   #change "log10" to "identity" to remove log scale
     theme_minimal()+
+    theme(axis.title.x = element_text(size=9))+
+    theme(axis.title.y = element_text(size=9))+
+    theme(axis.text = element_text(size=7))+
+    theme(legend.text = element_text(size=7))+
+    theme(legend.title = element_text(size=8))+
+    theme(legend.key.size = unit(3, "mm"))+
     geom_text( 
       data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-      aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+      aes(label=Neuron), size=2.5, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
     guides(size = guide_legend('postsynapses'), colour="none", shape="none", alpha="none")
   
   
@@ -835,13 +839,19 @@ library(ggplot2)
     scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
                                      `sensory neuron` = "#E69F00")) +
     scale_alpha_manual(values=c(0.5,0.8,1)) +
-    scale_size_area(max_size=6)+
+    scale_size_area(max_size=3)+
     labs(x='Cable length (µm)', y='Ratio (I-O) / (I+O)')+
     scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,1000,2000))+   #change "log10" to "identity" to remove log scale
     theme_minimal()+
+    theme(axis.title.x = element_text(size=9))+
+    theme(axis.title.y = element_text(size=9))+
+    theme(axis.text = element_text(size=7))+
+    theme(legend.text = element_text(size=7))+
+    theme(legend.title = element_text(size=8))+
+    theme(legend.key.size = unit(3, "mm"))+
     geom_text( 
       data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-      aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+      aes(label=Neuron), size=2.5, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
     guides(size = guide_legend('presynapses'), colour="none", shape="none", alpha="none")
   
   
@@ -854,13 +864,19 @@ library(ggplot2)
     scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
                                      `sensory neuron` = "#E69F00")) +
     scale_alpha_manual(values=c(0.5,0.8,1)) +
-    scale_size_area(max_size=6)+
+    scale_size_area(max_size=3)+
     ylim(0,400)+
     labs(x='Cable length (µm)', y='number of branch nodes')+
     scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,500,1000,2000))+   #change "log10" to "identity" to remove log scale
     theme_minimal()+
+    theme(axis.title.x = element_text(size=9))+
+    theme(axis.title.y = element_text(size=9))+
+    theme(axis.text = element_text(size=7))+
+    theme(legend.text = element_text(size=7))+
+    theme(legend.title = element_text(size=8))+
+    theme(legend.key.size = unit(3, "mm"))+
     geom_text(data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-              aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+              aes(label=Neuron), size=2.5, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
     guides(size = guide_legend("all synapses"), shape = guide_legend("neuron type"), 
            alpha = guide_legend("neuron type"), 
            colour = guide_legend(override.aes = list(size = 4), 'neuron type'))
@@ -874,13 +890,19 @@ library(ggplot2)
     scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
                                      `sensory neuron` = "#E69F00")) +
     scale_alpha_manual(values=c(0.5,0.8,1)) +
-    scale_size_area(max_size=6)+
+    scale_size_area(max_size=3)+
     ylim(0,475)+
     labs(x='Cable length (µm)', y='number of synapses')+
     scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,500,1000,2000))+   #change "log10" to "identity" to remove log scale
     theme_minimal()+
+    theme(axis.title.x = element_text(size=9))+
+    theme(axis.title.y = element_text(size=9))+
+    theme(axis.text = element_text(size=7))+
+    theme(legend.text = element_text(size=7))+
+    theme(legend.title = element_text(size=8))+
+    theme(legend.key.size = unit(3, "mm"))+
     geom_text(data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-              aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+              aes(label=Neuron), size=2.5, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
     guides(size = guide_legend('all synapses'), colour="none", shape="none", alpha="none")
   
   
@@ -898,7 +920,7 @@ library(ggplot2)
 
 
 
-#synapse distribution plots
+#read data for synapse distribution plots
 {
   SN_in <- read.csv2('data/SN_Radial_density_of_input_synapses.csv', sep = ",")
   SN_out <- read.csv2('data/SN_Radial_density_of_output_synapses.csv', sep = ",")
@@ -925,7 +947,7 @@ library(ggplot2)
 }
 
 
-
+#generate synapse distribution plots
 {
   syn1 <- ggplot(data=SN_IN_MN_in_out_tb)+
     stat_smooth(mapping = aes(x=distance_from_soma, y=IN_in), color='grey95', alpha=0.3, span=0.1)+
@@ -937,11 +959,16 @@ library(ggplot2)
     theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
     ylim(0,0.55)+
     labs(x='distance from soma (µm)', y='mean synapse number')+
-    draw_plot_label(label = "interneurons", size = 12, x = 20, y=0.55, fontface = "plain")+
-    draw_plot_label(label = "incoming", size = 12, x = 3, y=0.4, fontface = "plain", color='#E69F00', alpha=0.9)+
-    draw_plot_label(label = "outgoing", size = 12, x = 15, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)+
-    theme_minimal()
-  
+    draw_plot_label(label = "interneurons", size = 9, x = 20, y=0.55, fontface = "plain")+
+    draw_plot_label(label = "incoming", size = 9, x = 3, y=0.4, fontface = "plain", color='#E69F00', alpha=0.9)+
+    draw_plot_label(label = "outgoing", size = 9, x = 15, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)+
+    theme_minimal()+
+    theme(axis.title.x = element_text(size=9))+
+    theme(axis.title.y = element_text(size=9))+
+    theme(axis.text = element_text(size=7))+
+    theme(legend.text = element_text(size=7))+
+    theme(legend.title = element_text(size=8))+
+    theme(legend.key.size = unit(3, "mm"))
   
   syn2 <- ggplot(data=SN_IN_MN_in_out_tb)+
     stat_smooth(mapping = aes(x=distance_from_soma, y=MN_in), color='grey95', alpha=0.3, span=0.1)+
@@ -953,10 +980,16 @@ library(ggplot2)
     theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
     ylim(0,0.55)+
     labs(x='distance from soma (µm)', y='mean synapse number')+
-    draw_plot_label(label = "motoneurons", size = 12, x = 35, y=0.55, fontface = "plain")+
-    draw_plot_label(label = "incoming", size = 12, x = 25, y=0.2, fontface = "plain", color='#E69F00', alpha=0.9)+
-    draw_plot_label(label = "outgoing", size = 12, x = 76, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)+
-    theme_minimal()
+    draw_plot_label(label = "motoneurons", size = 9, x = 35, y=0.55, fontface = "plain")+
+    draw_plot_label(label = "incoming", size = 9, x = 25, y=0.2, fontface = "plain", color='#E69F00', alpha=0.9)+
+    draw_plot_label(label = "outgoing", size = 9, x = 76, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)+
+    theme_minimal()+
+    theme(axis.title.x = element_text(size=9))+
+    theme(axis.title.y = element_text(size=9))+
+    theme(axis.text = element_text(size=7))+
+    theme(legend.text = element_text(size=7))+
+    theme(legend.title = element_text(size=8))+
+    theme(legend.key.size = unit(3, "mm"))
   
   
   syn3 <- ggplot(data=SN_IN_MN_in_out_tb)+
@@ -969,10 +1002,16 @@ library(ggplot2)
     theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
     ylim(0,0.55)+
     labs(x='distance from soma (µm)', y='mean synapse number')+
-    draw_plot_label(label = "sensory neurons", size = 12, x = 2, y=0.55, fontface = "plain")+
-    draw_plot_label(label = "incoming", size = 12, x = -2, y=0.03, fontface = "plain", color='#E69F00', alpha=0.9)+
-    draw_plot_label(label = "outgoing", size = 12, x = 24, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)+
-    theme_minimal()
+    draw_plot_label(label = "sensory neurons", size = 9, x = 2, y=0.55, fontface = "plain")+
+    draw_plot_label(label = "incoming", size = 9, x = -2, y=0.03, fontface = "plain", color='#E69F00', alpha=0.9)+
+    draw_plot_label(label = "outgoing", size = 9, x = 24, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)+
+    theme_minimal()+
+    theme(axis.title.x = element_text(size=9))+
+    theme(axis.title.y = element_text(size=9))+
+    theme(axis.text = element_text(size=7))+
+    theme(legend.text = element_text(size=7))+
+    theme(legend.title = element_text(size=8))+
+    theme(legend.key.size = unit(3, "mm"))
   
   ggsave("plots/SN_IN_MN_C.pdf", width = 10, height = 10, limitsize = FALSE, 
          units = c("cm"), syn1)
@@ -980,37 +1019,8 @@ library(ggplot2)
          units = c("cm"), syn2)
   ggsave("plots/SN_IN_MN_E.pdf", width = 10, height = 10, limitsize = FALSE, 
          units = c("cm"), syn3)
-  
-  library("cowplot")
-  arrange2 <- 
-    ggdraw() +
-    draw_plot(p2, x = 0, y = 0.5, width = .5, height = .5) +
-    draw_plot(p1, x = .5, y = 0.5, width = .5, height = .5) +
-    draw_plot(p3, x = 1, y = 0.5, width = .5, height = .5) +
-    draw_plot(p4, x = 0, y = -0.02, width = .5, height = .5) +
-    draw_plot(syn1, x = 0.5, y = -0.02, width = .3, height = 0.5) +
-    draw_plot(syn2, x = 0.83, y = -0.02, width = .3, height = 0.5) +
-    draw_plot(syn3, x = 1.16, y = -0.02, width = .3, height = 0.5) +
-    draw_plot_label(label = c("A", "B", "C", "D", "E", "F", "G"), size = 15,
-                    x = c(0, 0.49, 0.99, 0, 0.49,0.82,1.15), y = c(1.01, 1.01,1.01, 0.49,0.49,0.49,0.49), fontface = "plain")+
-    theme(plot.margin = unit(c(1,134,2,0), "mm")) #set margins, top, right, bottom, left
-  
-  
-  # Saving R ggplot with R ggsave Function
-  ggsave("pictures/SN_IN_MN_synapses.pdf", width = 40, height = 19, limitsize = FALSE, 
-         units = c("cm"), arrange2)
-  ggsave("pictures/SN_IN_MN_synapses.png", width = 40, height = 19, limitsize = FALSE, 
-         units = c("cm"), arrange2)
 }
-
-
-
-
-#read back the plot of SN IN MN cable statistics
-img14 <- readPNG('pictures/SN_IN_MN_synapses.png')
-panel14 <- ggdraw() + draw_image(img14, scale = 1)
-
-
+#combine bottom multi-panels
 
 
 
@@ -1024,20 +1034,39 @@ Fig1top <- plot_grid(panel1, panel5, panel2, panel3, panel13,
           rel_widths = c(1, 1, 1, 1, 1),
           rel_heights = c(1, 0.03, 1),
           label_size = 12,
-          label_y = 1.01,
-          label_x = 0.02,
+          label_y = 1.02,
+          label_x = 0,
           label_fontfamily = "sans", label_fontface = "plain",
           labels=c("A","B","C","D","E", 
                    "", "", "", "", "",
-                   "F","G", "H", "I", "J"))+
+                   "F","G", "H", "I", "J"))
+
+Fig1mid <- plot_grid(p2, p1, p3,
+                     ncol=3,
+                     align="h",
+                     rel_widths = c(1, 1, 1),
+                     label_size = 12,
+                     label_y = 1.1,
+                     label_x = 0,
+                     label_fontfamily = "sans", label_fontface = "plain",
+                     labels=c("K","L","M"))
+
+Fig1bottom <- plot_grid(p4, syn1, syn2, syn3,
+                        ncol=4,
+                        align="h",
+                        rel_widths = c(1, 0.7, 0.7,0.7),
+                        label_size = 12,
+                        label_y = 1.1,
+                        label_x = 0,
+                        label_fontfamily = "sans", label_fontface = "plain",
+                        labels=c("N","O","P", "Q"))
+
+
+Fig1combined <- plot_grid(Fig1top, NULL, Fig1mid, NULL, Fig1bottom,
+                  ncol=1,
+                  rel_heights = c(1, 0.03, 0.4, 0.05,0.4)) +
   theme(plot.margin = unit(c(1, 1, 1, 1), units = "pt"))
 
-Fig1bottom <- plot_grid(panel14)
-
-Fig1combined <- plot_grid(Fig1top, NULL, Fig1bottom,
-                  ncol=1,
-                  rel_heights = c(1,-0.1,1))
-                     
 ggsave("figures/Figure1.pdf", limitsize = FALSE, 
-       units = c("cm"), Fig1combined, width = 23.9, height = 28)
+       units = c("cm"), Fig1combined, width = 23.9, height = 27)
 
