@@ -712,25 +712,19 @@ panel9 <- ggdraw() + draw_image(img9, scale = 1) +
 panel10 <- ggdraw() + draw_image(img10, scale = 1) + draw_label("SN", x = 0.93, y = 0.95, fontfamily = "sans", fontface = "plain",
                                                                 color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
   draw_label("left", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
-             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
-  draw_label("neurons with soma", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
-             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) 
 panel11 <- ggdraw() + draw_image(img11, scale = 1) + draw_label("SN", x = 0.93, y = 0.95, fontfamily = "sans", fontface = "plain",
                                                                 color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
   draw_label("MN", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
              color = "#0072B2", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
   draw_label("left", x = 0.93, y = 0.85, fontfamily = "sans", fontface = "plain",
-             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)  +
-  draw_label("neurons with soma", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
-             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) 
 panel12 <- ggdraw() + draw_image(img12, scale = 1) + draw_label("SN", x = 0.93, y = 0.95, fontfamily = "sans", fontface = "plain",
                                                                 color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
   draw_label("IN", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
              color = "#CC79A7", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
   draw_label("left", x = 0.93, y = 0.85, fontfamily = "sans", fontface = "plain",
-             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)  +
-  draw_label("neurons with soma", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
-             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) 
 panel13 <- ggdraw() + draw_image(img13, scale = 1) + draw_label("SN", x = 0.93, y = 0.95, fontfamily = "sans", fontface = "plain",
                                                                 color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
   draw_label("IN", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
@@ -744,39 +738,291 @@ panel13 <- ggdraw() + draw_image(img13, scale = 1) + draw_label("SN", x = 0.93, 
 }
 #cb friendly colour codes interneuron = "#CC79A7", motoneuron = "#0072B2",  `sensory neuron` = "#E69F00"
 
-#combine panels first
+
+
+
+######################################
+#code for SN IN MN statistics plots
+######################################
+
+
+#This code was used to generate Figure 1 in the Veraszto et al. 2021 connectome paper to plot the ratio of input to output synapses (I-O)/(I+O) 
+#for sensory, inter and motoneurons, as a function of cable length
+#the data were downloaded from the Catmaid measurements widget
+
+library(tidyverse)
+library(ggplot2)
+
+#select some colorblind friendly color combinations
+# Taken mostly from https://tradeblotter.wordpress.com/2013/02/28/the-paul-tol-21-color-salute/
+#Color blind friendly palettes
+########## DEFINE Color palettes #########
+#From Paul Tol: https://personal.sron.nl/~pault/
+Tol_bright <- c('#EE6677', '#228833', '#4477AA', '#CCBB44', '#66CCEE', '#AA3377', '#BBBBBB')
+Tol_muted <- c('#88CCEE', '#44AA99', '#117733', '#332288', '#DDCC77', '#999933',
+               '#CC6677', '#882255', '#AA4499', '#DDDDDD')
+Tol_light <- c('#BBCC33', '#AAAA00', '#77AADD', '#EE8866', '#EEDD88', '#FFAABB', 
+               '#99DDFF', '#44BB99', '#DDDDDD')
+#From Color Universal Design (CUD): https://jfly.uni-koeln.de/color/
+Okabe_Ito <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", 
+               "#CC79A7", "#000000")
+########################## SHOW as multiple PIE Charts ###################
+par(mfrow=c(2,2))
+par(mar=c(1,1,1,1))
+pie(rep(1,length(Tol_bright)), col=Tol_bright, Tol_bright, main='Tol bright')
+pie(rep(1,length(Tol_muted)), col=Tol_muted, Tol_muted, main='Tol muted')
+pie(rep(1,length(Okabe_Ito)), col=Okabe_Ito, Okabe_Ito, main='Tol Okabe Ito')
+pie(rep(1,length(Tol_light)), col=Tol_light, Tol_light, main='Tol light')
+
+
+#read data from data folder
+SN <- read.csv2('data/SN_skeleton_measurements.csv', sep = ",")
+IN <- read.csv2('data/IN_skeleton_measurements.csv', sep = ",")
+MN <- read.csv2('data/MN_skeleton_measurements.csv', sep = ",")
+
+#convert to tibble
+SN <- as_tibble(SN)
+IN <- as_tibble(IN)
+MN <- as_tibble(MN)
+
+#add neuron type description as a new column
+SN <- SN %>% 
+  mutate(neuron_type = 'sensory neuron')
+IN <- IN %>% 
+  mutate(neuron_type = 'interneuron')
+MN <- MN %>% 
+  mutate(neuron_type = 'motoneuron')
+
+#combine tibbles
+SN_IN <- full_join(SN,IN)
+SN_IN_MN <- full_join(SN_IN,MN)
+
+#add a column with input to output ratio
+SN_IN_MN <- mutate(SN_IN_MN, in_out_ratio = (N.inputs-N.outputs)/(N.inputs+N.outputs))
+
+#add a column with ratio of number of branches and length ('branchiness')
+SN_IN_MN <- mutate(SN_IN_MN, branchpoints_length_ratio = (N.branch.nodes)/(Smooth.cable..nm.))
+
+#add a column with sum of input and output synapses ('total synapses')
+SN_IN_MN <- mutate(SN_IN_MN, total_synapses = (N.inputs+N.outputs))
+
+#start plotting with ggplot
+library(ggplot2)
 {
-Fig1BCDE <- plot_grid(panel5, NULL, panel6, panel2, NULL, panel3,
-          ncol=3,
-          align="h",
-          # A negative rel_height shrinks space between elements
-          rel_widths = c(1, -0.2, 1),
-          rel_heights = c(1, 1),
-          label_size = 24,
-          label_y = 1,
-          label_x = 0.1,
-          label_fontfamily = "sans", label_fontface = "plain",
-          labels=c("B","","C","D", "", "E") )+
-  theme(plot.margin = unit(c(-5, -40, 1, -8), units = "pt"))
-
-
-ggsave("figures/Figure1BCDE.png", limitsize = FALSE, 
-       units = c("cm"), Fig1BCDE, width=16, height = 20)
-imgBCDE <- readPNG("figures/Figure1BCDE.png")
-panelBCDE <- ggdraw() + draw_image(imgBCDE, scale = 1)
+  p1 <- ggplot(SN_IN_MN) +
+    aes(x = Smooth.cable..nm./1000, y = in_out_ratio, colour = neuron_type,
+        shape=neuron_type, size = N.inputs, alpha=neuron_type) +
+    # geom_point(shape = "circle") + 
+    geom_jitter(stroke=0, width=0, height = 0.01)+
+    scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
+                                     `sensory neuron` = "#E69F00")) +
+    scale_alpha_manual(values=c(0.5,0.8,1)) +
+    scale_size_area(max_size=6)+
+    labs(x='Cable length (µm)', y='Ratio (I-O) / (I+O)')+
+    scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,1000,2000))+   #change "log10" to "identity" to remove log scale
+    theme_minimal()+
+    geom_text( 
+      data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
+      aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+    guides(size = guide_legend('postsynapses'), colour="none", shape="none", alpha="none")
+  
+  
+  p2 <- ggplot(SN_IN_MN) +
+    aes(x = Smooth.cable..nm./1000, y = in_out_ratio, colour = neuron_type,
+        shape=neuron_type, size = N.outputs, alpha=neuron_type) +
+    # geom_point(shape = "circle") + 
+    geom_jitter(stroke=0, width=0, height = 0.01)+
+    scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
+                                     `sensory neuron` = "#E69F00")) +
+    scale_alpha_manual(values=c(0.5,0.8,1)) +
+    scale_size_area(max_size=6)+
+    labs(x='Cable length (µm)', y='Ratio (I-O) / (I+O)')+
+    scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,1000,2000))+   #change "log10" to "identity" to remove log scale
+    theme_minimal()+
+    geom_text( 
+      data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
+      aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+    guides(size = guide_legend('presynapses'), colour="none", shape="none", alpha="none")
+  
+  
+  #plot branch numbers
+  p3 <- ggplot(SN_IN_MN) +
+    aes(x = Smooth.cable..nm./1000, y = N.branch.nodes, colour = neuron_type,
+        shape=neuron_type, size = total_synapses, alpha=neuron_type) +
+    # geom_point(shape = "circle") + 
+    geom_jitter(stroke=0, width=0, height = 0.01)+
+    scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
+                                     `sensory neuron` = "#E69F00")) +
+    scale_alpha_manual(values=c(0.5,0.8,1)) +
+    scale_size_area(max_size=6)+
+    ylim(0,400)+
+    labs(x='Cable length (µm)', y='number of branch nodes')+
+    scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,500,1000,2000))+   #change "log10" to "identity" to remove log scale
+    theme_minimal()+
+    geom_text(data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
+              aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+    guides(size = guide_legend("all synapses"), shape = guide_legend("neuron type"), 
+           alpha = guide_legend("neuron type"), 
+           colour = guide_legend(override.aes = list(size = 4), 'neuron type'))
+  
+  #plot branch numbers
+  p4 <- ggplot(SN_IN_MN) +
+    aes(x = Smooth.cable..nm./1000, y = total_synapses, colour = neuron_type,
+        shape=neuron_type, size = total_synapses, alpha=neuron_type) +
+    # geom_point(shape = "circle") + 
+    geom_jitter(stroke=0, width=0, height = 0.01)+
+    scale_color_manual(values = list(interneuron = "#CC79A7", motoneuron = "#0072B2", 
+                                     `sensory neuron` = "#E69F00")) +
+    scale_alpha_manual(values=c(0.5,0.8,1)) +
+    scale_size_area(max_size=6)+
+    ylim(0,475)+
+    labs(x='Cable length (µm)', y='number of synapses')+
+    scale_x_continuous(trans = "log10",  limits=c(50,2178), breaks=c(100,500,1000,2000))+   #change "log10" to "identity" to remove log scale
+    theme_minimal()+
+    geom_text(data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
+              aes(label=Neuron), size=3, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+    guides(size = guide_legend('all synapses'), colour="none", shape="none", alpha="none")
+  
+  
+  # Saving plots with R ggsave Function
+  ggsave("plots/SN_IN_MN_A.pdf", width = 15, height = 10, limitsize = FALSE, 
+         units = c("cm"), p1)
+  ggsave("plots/SN_IN_MN_B.pdf", width = 15, height = 10, limitsize = FALSE, 
+         units = c("cm"), p2)
+  ggsave("plots/SN_IN_MN_C.pdf", width = 15, height = 10, limitsize = FALSE, 
+         units = c("cm"), p3)
+  ggsave("plots/SN_IN_MN_D.pdf", width = 15, height = 10, limitsize = FALSE, 
+         units = c("cm"), p4)
 }
 
+
+
+
+#synapse distribution plots
+{
+  SN_in <- read.csv2('data/SN_Radial_density_of_input_synapses.csv', sep = ",")
+  SN_out <- read.csv2('data/SN_Radial_density_of_output_synapses.csv', sep = ",")
+  IN_in <- read.csv2('data/IN_Radial_density_of_input_synapses.csv', sep = ",")
+  IN_out <- read.csv2('data/IN_Radial_density_of_output_synapses.csv', sep = ",")
+  MN_in <- read.csv2('data/MN_Radial_density_of_input_synapses.csv', sep = ",")
+  MN_out <- read.csv2('data/MN_Radial_density_of_output_synapses.csv', sep = ",")
+  
+  
+  #combine data into a dat.frame and add NA values to the end of the rows to bring them to the same 175 length
+  SN_IN_MN_in_out <- data.frame( MN_in = c(colMeans(MN_in[,-1]), rep(NA, 175 - length(colMeans(MN_in[,-1])) )),
+                                 MN_out = c(colMeans(MN_out[,-1]), rep(NA, 175 - length(colMeans(MN_out[,-1])))),
+                                 IN_in = c(colMeans(IN_in[,-1]), rep(NA, 175 - length(colMeans(IN_in[,-1])))),
+                                 IN_out = c(colMeans(IN_out[,-1]), rep(NA, 175 - length(colMeans(IN_out[,-1])))),
+                                 SN_in = c(colMeans(SN_in[,-1]), rep(NA, 175 - length(colMeans(SN_in[,-1])))),
+                                 SN_out = c(colMeans(SN_out[,-1]), rep(NA, 175 - length(colMeans(SN_out[,-1])))))
+  
+  SN_IN_MN_in_out_tb <- tibble(SN_IN_MN_in_out)
+  
+  #add a column with um from soma
+  SN_IN_MN_in_out_tb <- mutate(SN_IN_MN_in_out_tb, distance_from_soma = c(0:174))
+  
+  SN_IN_MN_in_out_tb
+}
+
+
+
+{
+  syn1 <- ggplot(data=SN_IN_MN_in_out_tb)+
+    stat_smooth(mapping = aes(x=distance_from_soma, y=IN_in), color='grey95', alpha=0.3, span=0.1)+
+    geom_line(mapping = aes(x=distance_from_soma, y=IN_in), color='#E69F00', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+    geom_point(mapping = aes(x=distance_from_soma, y=IN_in), color='#E69F00', alpha=0.8, shape=17)+
+    stat_smooth(mapping = aes(x=distance_from_soma, y=IN_out), color='grey95', alpha=0.3, span=0.1)+
+    geom_line(mapping = aes(x=distance_from_soma, y=IN_out), color='#0072B2', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+    geom_point(mapping = aes(x=distance_from_soma, y=IN_out), color='#0072B2', alpha=0.5, shape=1)+
+    theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
+    ylim(0,0.55)+
+    labs(x='distance from soma (µm)', y='mean synapse number')+
+    draw_plot_label(label = "interneurons", size = 12, x = 20, y=0.55, fontface = "plain")+
+    draw_plot_label(label = "incoming", size = 12, x = 3, y=0.4, fontface = "plain", color='#E69F00', alpha=0.9)+
+    draw_plot_label(label = "outgoing", size = 12, x = 15, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)+
+    theme_minimal()
+  
+  
+  syn2 <- ggplot(data=SN_IN_MN_in_out_tb)+
+    stat_smooth(mapping = aes(x=distance_from_soma, y=MN_in), color='grey95', alpha=0.3, span=0.1)+
+    geom_line(mapping = aes(x=distance_from_soma, y=MN_in), color='#E69F00', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+    geom_point(mapping = aes(x=distance_from_soma, y=MN_in), color='#E69F00', alpha=0.8, shape=17)+
+    stat_smooth(mapping = aes(x=distance_from_soma, y=MN_out), color='grey95', alpha=0.3, span=0.1)+
+    geom_line(mapping = aes(x=distance_from_soma, y=MN_out), color='#0072B2', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+    geom_point(mapping = aes(x=distance_from_soma, y=MN_out), color='#0072B2', alpha=0.5, shape=1)+
+    theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
+    ylim(0,0.55)+
+    labs(x='distance from soma (µm)', y='mean synapse number')+
+    draw_plot_label(label = "motoneurons", size = 12, x = 35, y=0.55, fontface = "plain")+
+    draw_plot_label(label = "incoming", size = 12, x = 25, y=0.2, fontface = "plain", color='#E69F00', alpha=0.9)+
+    draw_plot_label(label = "outgoing", size = 12, x = 76, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)+
+    theme_minimal()
+  
+  
+  syn3 <- ggplot(data=SN_IN_MN_in_out_tb)+
+    stat_smooth(mapping = aes(x=distance_from_soma, y=SN_in), color='grey95', alpha=0.3, span=0.1)+
+    geom_line(mapping = aes(x=distance_from_soma, y=SN_in), color='#E69F00', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+    geom_point(mapping = aes(x=distance_from_soma, y=SN_in), color='#E69F00', alpha=0.8, shape=17)+
+    stat_smooth(mapping = aes(x=distance_from_soma, y=SN_out), color='grey95', alpha=0.3, span=0.1)+
+    geom_line(mapping = aes(x=distance_from_soma, y=SN_out), color='#0072B2', shape=2,stat="smooth",span=0.1, alpha=0.3,size=1)+
+    geom_point(mapping = aes(x=distance_from_soma, y=SN_out), color='#0072B2', alpha=0.5, shape=1)+
+    theme(panel.background = element_rect(fill = "grey95", color = "grey"))+
+    ylim(0,0.55)+
+    labs(x='distance from soma (µm)', y='mean synapse number')+
+    draw_plot_label(label = "sensory neurons", size = 12, x = 2, y=0.55, fontface = "plain")+
+    draw_plot_label(label = "incoming", size = 12, x = -2, y=0.03, fontface = "plain", color='#E69F00', alpha=0.9)+
+    draw_plot_label(label = "outgoing", size = 12, x = 24, y=0.3, fontface = "plain", color='#0072B2', alpha=0.6)+
+    theme_minimal()
+  
+  ggsave("plots/SN_IN_MN_C.pdf", width = 10, height = 10, limitsize = FALSE, 
+         units = c("cm"), syn1)
+  ggsave("plots/SN_IN_MN_D.pdf", width = 10, height = 10, limitsize = FALSE, 
+         units = c("cm"), syn2)
+  ggsave("plots/SN_IN_MN_E.pdf", width = 10, height = 10, limitsize = FALSE, 
+         units = c("cm"), syn3)
+  
+  library("cowplot")
+  arrange2 <- 
+    ggdraw() +
+    draw_plot(p2, x = 0, y = 0.5, width = .5, height = .5) +
+    draw_plot(p1, x = .5, y = 0.5, width = .5, height = .5) +
+    draw_plot(p3, x = 1, y = 0.5, width = .5, height = .5) +
+    draw_plot(p4, x = 0, y = -0.02, width = .5, height = .5) +
+    draw_plot(syn1, x = 0.5, y = -0.02, width = .3, height = 0.5) +
+    draw_plot(syn2, x = 0.83, y = -0.02, width = .3, height = 0.5) +
+    draw_plot(syn3, x = 1.16, y = -0.02, width = .3, height = 0.5) +
+    draw_plot_label(label = c("A", "B", "C", "D", "E", "F", "G"), size = 15,
+                    x = c(0, 0.49, 0.99, 0, 0.49,0.82,1.15), y = c(1.01, 1.01,1.01, 0.49,0.49,0.49,0.49), fontface = "plain")+
+    theme(plot.margin = unit(c(1,134,2,0), "mm")) #set margins, top, right, bottom, left
+  
+  
+  # Saving R ggplot with R ggsave Function
+  ggsave("pictures/SN_IN_MN_synapses.pdf", width = 40, height = 19, limitsize = FALSE, 
+         units = c("cm"), arrange2)
+  ggsave("pictures/SN_IN_MN_synapses.png", width = 40, height = 19, limitsize = FALSE, 
+         units = c("cm"), arrange2)
+}
+
+
+
+
+#read back the plot of SN IN MN cable statistics
+img14 <- readPNG('pictures/SN_IN_MN_synapses.png')
+panel14 <- ggdraw() + draw_image(img14, scale = 1)
+
+
+
+
+
 #plot in a multi panel figure
-Fig1 <- plot_grid(panel1, panel5, panel2, panel3, panel13,
-                  NULL,NULL,NULL,NULL,NULL,
-                  panel8, panel9, panel10, panel11, panel12,
+Fig1top <- plot_grid(panel1, panel5, panel2, panel3, panel13,
                   NULL,NULL,NULL,NULL,NULL,
                   panel8, panel9, panel10, panel11, panel12,
           ncol=5,
           align="h",
           # A negative rel_height shrinks space between elements
           rel_widths = c(1, 1, 1, 1, 1),
-          rel_heights = c(1, 0.03, 1, 0.03, 1),
+          rel_heights = c(1, 0.03, 1),
           label_size = 12,
           label_y = 1.01,
           label_x = 0.02,
@@ -786,26 +1032,12 @@ Fig1 <- plot_grid(panel1, panel5, panel2, panel3, panel13,
                    "F","G", "H", "I", "J"))+
   theme(plot.margin = unit(c(1, 1, 1, 1), units = "pt"))
 
+Fig1bottom <- plot_grid(panel14)
+
+Fig1combined <- plot_grid(Fig1top, NULL, Fig1bottom,
+                  ncol=1,
+                  rel_heights = c(1,-0.1,1))
+                     
 ggsave("figures/Figure1.pdf", limitsize = FALSE, 
-       units = c("cm"), Fig1, width = 23.9, height = 21)
-
-#It may help to specify the dimensions of the plot window to ensure that the plot is made with correct overall proportions.
-try(dev.off(), silent = T)
-dev.new(width = 1, height = 1, units = "cm")
-
-ggdraw() +
-  draw_plot(panel1, x = 0, y = 0.7, width = .3, height = .3) +
-  draw_plot(panel5, x = 0.2, y = 0.7, width = .3, height = .3) +
-  draw_plot(panel2, x = 0.4, y = 0.7, width = .3, height = .3) +
-  draw_plot(panel3, x = 0.6, y = 0.7, width = .3, height = .3) +
-  draw_plot(panel13, x = 0.8, y = 0.7, width = .3, height = .3) +
-  draw_plot(panel8, x = 0, y = -0.02, width = .3, height = 0.3) +
-  draw_plot(panel9, x = 0.2, y = -0.02, width = .3, height = 0.3) +
-  draw_plot(panel10, x = 0.4, y = -0.02, width = .3, height = 0.3) +
-  draw_plot(panel11, x = 0.6, y = -0.02, width = .3, height = 0.3) +
-  draw_plot(panel12, x = 0.8, y = -0.02, width = .3, height = 0.3) +
-  draw_plot_label(label = c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J"), size = 12,
-                  x = c(0, 0.19, 0.39, 0.59, 0.79, 0, 0.19, 0.39, 0.59, 0.79), 
-                  y = c(1.01, 1.01,1.01, 1.01, 1.01, 0.49, 0.49, 0.49, 0.49, 0.49), fontface = "plain")+
-  theme(plot.margin = unit(c(1,1,2,0), "mm")) #set margins, top, right, bottom, left
+       units = c("cm"), Fig1combined, width = 23.9, height = 28)
 
