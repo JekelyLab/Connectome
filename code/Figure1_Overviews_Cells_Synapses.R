@@ -826,8 +826,8 @@ library(ggplot2)
     theme(legend.title = element_text(size=8))+
     theme(legend.key.size = unit(3, "mm"))+
     geom_text( 
-      data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-      aes(label=Neuron), size=2.5, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+      data=SN_IN_MN %>% filter(N.inputs>100), # Filter data first
+      aes(label=Neuron), size=2.5, alpha=0.7, nudge_x =-0.1, check_overlap = TRUE, col='black')+                                            # Apply guides function
     guides(size = guide_legend('postsynapses'), colour="none", shape="none", alpha="none")
   
   
@@ -850,7 +850,7 @@ library(ggplot2)
     theme(legend.title = element_text(size=8))+
     theme(legend.key.size = unit(3, "mm"))+
     geom_text( 
-      data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
+      data=SN_IN_MN %>% filter(N.outputs>130), # Filter data first
       aes(label=Neuron), size=2.5, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
     guides(size = guide_legend('presynapses'), colour="none", shape="none", alpha="none")
   
@@ -875,8 +875,8 @@ library(ggplot2)
     theme(legend.text = element_text(size=7))+
     theme(legend.title = element_text(size=8))+
     theme(legend.key.size = unit(3, "mm"))+
-    geom_text(data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-              aes(label=Neuron), size=2.5, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+    geom_text(data=SN_IN_MN %>% filter(total_synapses>200), # Filter data first
+              aes(label=Neuron), size=2.5, alpha=0.7, nudge_x =-0.1, check_overlap = TRUE, col='black')+                                            # Apply guides function
     guides(size = guide_legend("all synapses"), shape = guide_legend("neuron type"), 
            alpha = guide_legend("neuron type"), 
            colour = guide_legend(override.aes = list(size = 4), 'neuron type'))
@@ -901,8 +901,8 @@ library(ggplot2)
     theme(legend.text = element_text(size=7))+
     theme(legend.title = element_text(size=8))+
     theme(legend.key.size = unit(3, "mm"))+
-    geom_text(data=SN_IN_MN %>% filter(N.branch.nodes>210 | Smooth.cable..nm./1000>800), # Filter data first
-              aes(label=Neuron), size=2.5, alpha=0.7, check_overlap = TRUE, col='black')+                                            # Apply guides function
+    geom_text(data=SN_IN_MN %>% filter(total_synapses>200), # Filter data first
+              aes(label=Neuron), size=2.5, alpha=0.7, nudge_x =-0.1, check_overlap = TRUE, col='black')+                                            # Apply guides function
     guides(size = guide_legend('all synapses'), colour="none", shape="none", alpha="none")
   
   
@@ -1069,4 +1069,8 @@ Fig1combined <- plot_grid(Fig1top, NULL, Fig1mid, NULL, Fig1bottom,
 
 ggsave("figures/Figure1.pdf", limitsize = FALSE, 
        units = c("cm"), Fig1combined, width = 23.9, height = 27)
+
+ggsave("figures/Figure1.png", limitsize = FALSE, 
+       units = c("cm"), Fig1combined, width = 23.9, height = 27)
+
 
