@@ -19,6 +19,10 @@ require("graphics")
 # can run this separate file using source function
 conn <- source("~/R/conn.R")
 
+#for larger calls we need to use http/1, see https://www.gitmemory.com/issue/natverse/rcatmaid/158/641537466
+#for this we configure to http/1.1
+conn_http1 = catmaid_login(conn=conn, config=httr::config(ssl_verifypeer=0, http_version=1))
+
 
 #see the available volumes
 catmaid_get_volumelist(conn = NULL, pid = 11)
@@ -31,13 +35,11 @@ yolk <- catmaid_get_volume(4, rval = c("mesh3d", "catmaidmesh", "raw"),
   invertFaces = T, conn = NULL, pid = 11)
 }
 
-#for larger calls we need to use http/1, see https://www.gitmemory.com/issue/natverse/rcatmaid/158/641537466
-#for this we configure to http/1.1
-conn_http1 = catmaid_login(conn=conn, config=httr::config(ssl_verifypeer=0, http_version=1))
 
 #catmaid_get_connector_table("^connectome$", pid= 11, direction = "incoming", conn = conn_http1)
 
 #read cells
+{
 neurons = nlapply(read.neurons.catmaid("^connectome_neuron$", pid=11, conn = conn_http1,
                                        fetch.annotations = FALSE),
                 function(x) smooth_neuron(x, sigma=6000))
@@ -80,11 +82,10 @@ neuropodium = nlapply(read.neurons.catmaid("^neuropodium$", pid=11, conn = conn_
                                    fetch.annotations = FALSE),
               function(x) smooth_neuron(x, sigma=6000))
 
-
 #these four dots are the most extreme points of the volume, adding them to the 3d view solves the problem with automatic zooming and movement of the field shown
 bounding_dots = nlapply(read.neurons.catmaid("^bounding_dots$", pid=11),
                 function(x) smooth_neuron(x, sigma=6000))
-
+}
 
 #check if there are any cells with two or more tagged somas
 sum = summary(epithelia)
@@ -118,7 +119,8 @@ par3d(zoom=0.48)
 
 
 #extract connectors to be able to plot them by unique colours
-{SN_conn <- connectors(Sensoryneuron)
+{
+  SN_conn <- connectors(Sensoryneuron)
 str(SN_conn)
 presyn_SN_conn <- SN_conn[SN_conn$prepost == 0,]
 postsyn_SN_conn <- SN_conn[SN_conn$prepost == 1,]
@@ -151,7 +153,27 @@ clipplanes3d(0, 0, -1, 60000)
 par3d(zoom=0.63)
 }
 rgl.snapshot("pictures/connectome_SN_IN_MN_synapses_frontal.png")
+
+#plot lateral view
+{
+  plot_background()
+  #plot only the presyn connectors
+  plot3d(presyn_SN_conn$x, presyn_SN_conn$y, presyn_SN_conn$z, size=5, alpha=0.5, col="#E69F00", add=T)
+  plot3d(presyn_MN_conn$x, presyn_MN_conn$y, presyn_MN_conn$z, size=5, alpha=0.5, col="#0072B2", add=T)
+  plot3d(presyn_IN_conn$x+1, presyn_IN_conn$y, presyn_IN_conn$z, size=5, alpha=0.5, col="#CC79A7", add=T)
+  nview3d("left", extramat=rotationMatrix(-pi/2, pi, -0.2, 0))
+  clipplanes3d(1, 0, 0.16, -75700)
+  plot3d(outline, WithConnectors = F, WithNodes = F, soma=F, lwd=2,
+       rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=0.07,
+       col="#E2E2E2") 
+  par3d(zoom=0.52)
+}
+
+rgl.snapshot("pictures/connectome_SN_IN_MN_synapses_left.png")
+
 close3d()
+
+
 
 #plot the cells with soma coloured by SN MN IN
 {
@@ -305,6 +327,8 @@ skids_by_2annotations <- function(annotation1,annotation2){
 }
 
 
+#plot ventral views and side views of left side cells only
+{
 next3d(clear=F)
 plot3d(acicula, WithConnectors = F, WithNodes = F, soma=T, lwd=3,
        rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=1,
@@ -356,7 +380,7 @@ next3d(clear=F)
 plot3d(skeletons_to_plot_left, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
        add=T, alpha=1, col="#4477AA")
 rgl.snapshot("pictures/Video1B_3.png")
-
+}
 
 
 #plot synapses
@@ -380,7 +404,8 @@ plot3d(presyn_IN_conn_left$x+1, presyn_IN_conn_left$y, presyn_IN_conn_left$z, si
 rgl.snapshot("pictures/Video1B_6.png")
 }
 
-
+#continue plotting cells
+{
 next3d(clear=F)
 plot3d(Sensoryneuron, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
        add=T, alpha=1, col="#E69F00")
@@ -533,10 +558,11 @@ nview3d("ventral", extramat=rotationMatrix(0, 1, 0, 0))
 next3d(clear=F)
 nview3d("left", extramat=rotationMatrix(-pi/2, pi, -0.2, 0))
 next3d(clear=F)
+}
 
 
-
-for (i in 1:265){
+#export rotation by frame for video
+for (i in 1:240){
   play3d( spin3d( axis = c(0, 0, 10), rpm = 0.2), duration = 2)
   next3d(clear=F)
   play3d( spin3d( axis = c(0, 0, 10), rpm = 0.2), duration = 2)
@@ -547,22 +573,239 @@ for (i in 1:265){
   rgl.snapshot(filename)
 }
 
+############################
+#plot SN IN and MN only on left side with soma
+
+#plot one panel background
+{
+  nopen3d() # opens a pannable 3d window
+  mfrow3d(1, 1)  #defines one scene
+  par3d(windowRect = c(20, 30, 600, 800)) #to define the size of the rgl window
+  nview3d("ventral", extramat=rotationMatrix(0, 1, 0, 0))
+  plot3d(bounding_dots, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
+         rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=1,
+         col="white") 
+  plot3d(yolk, WithConnectors = F, WithNodes = F, soma=F, lwd=2,
+         rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=0.1,
+         col="#E2E2E2") 
+  plot3d(acicula, WithConnectors = F, WithNodes = F, soma=T, lwd=3,
+         rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=0.3,
+         col="black")
+  plot3d(chaeta, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
+         rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=0.5,
+         col="grey") 
+  par3d(zoom=0.48)
+}
+
+#plot SN IN MN on left side only
+#cb friendly colour codes interneuron = "#CC79A7", motoneuron = "#0072B2",  `sensory neuron` = "#E69F00"
+{
+  skids_to_plot_left <- skids_by_2annotations('motorneuron','left_side')
+  skeletons_to_plot_left = nlapply(read.neurons.catmaid(skids_to_plot_left, pid=11, conn = conn_http1,
+                                                        fetch.annotations = FALSE),
+                                   function(x) smooth_neuron(x, sigma=6000))
+  plot3d(skeletons_to_plot_left, WithConnectors = F, WithNodes = F, soma=T, lwd=2,
+         rev = FALSE, fixup = F, add=T, alpha=0.6, col="#0072B2")
+  rgl.snapshot("pictures/MN_left.png")
+  
+skids_to_plot_left <- skids_by_2annotations('Sensory neuron','left_side')
+skeletons_to_plot_left = nlapply(read.neurons.catmaid(skids_to_plot_left, pid=11, conn = conn_http1,
+                                                      fetch.annotations = FALSE),
+                                 function(x) smooth_neuron(x, sigma=6000))
+plot3d(skeletons_to_plot_left, WithConnectors = F, WithNodes = F, soma=T, lwd=2,
+       add=T, alpha=0.6, col="#E69F00")
+par3d(zoom=0.55)
+rgl.snapshot("pictures/SN_MN_left.png")
+}
+
+#plot one panel background
+{
+  nopen3d() # opens a pannable 3d window
+  mfrow3d(1, 1)  #defines one scene
+  par3d(windowRect = c(20, 30, 600, 800)) #to define the size of the rgl window
+  nview3d("ventral", extramat=rotationMatrix(0, 1, 0, 0))
+  plot3d(bounding_dots, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
+         rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=1,
+         col="white") 
+  plot3d(yolk, WithConnectors = F, WithNodes = F, soma=F, lwd=2,
+         rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=0.1,
+         col="#E2E2E2") 
+  plot3d(acicula, WithConnectors = F, WithNodes = F, soma=T, lwd=3,
+         rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=0.3,
+         col="black")
+  plot3d(chaeta, WithConnectors = F, WithNodes = F, soma=F, lwd=1,
+         rev = FALSE, fixup = F, add=T, forceClipregion = F, alpha=0.5,
+         col="grey") 
+  par3d(zoom=0.48)
+}
+
+{
+plot3d(skeletons_to_plot_left, WithConnectors = F, WithNodes = F, soma=T, lwd=2,
+       rev = FALSE, fixup = F, add=T, alpha=0.6, col="#E69F00")
+rgl.snapshot("pictures/SN_left.png")
+skids_to_plot_left <- skids_by_2annotations('interneuron','left_side')
+skeletons_to_plot_left = nlapply(read.neurons.catmaid(skids_to_plot_left, pid=11, conn = conn_http1,
+                                                      fetch.annotations = FALSE),
+                                 function(x) smooth_neuron(x, sigma=6000))
+plot3d(skeletons_to_plot_left, WithConnectors = F, WithNodes = F, soma=T, lwd=2,
+       rev = FALSE, fixup = F, add=T, alpha=0.6, col="#CC79A7")
+rgl.snapshot("pictures/SN_IN_left.png")
+}
+
+#########################################################
+#Make multi-panel figure
+#########################################################
 
 
+library(cowplot)
+library(ggplot2)
+library(png)
 
-skids_to_plot <- skids_by_2annotations('connectome_motorneuron','with_soma')
-skeletons_to_plot = nlapply(read.neurons.catmaid(skids_to_plot, pid=11, conn = conn_http1,
-                                         fetch.annotations = FALSE),
-                            function(x) smooth_neuron(x, sigma=6000))
-skids_to_plot_left <- skids_by_2annotations('connectome_motorneuron','left_side')
-skeletons_to_plot_left = nlapply(read.neurons.catmaid(skids_to_plot, pid=11, conn = conn_http1,
-                                                 fetch.annotations = FALSE),
-                            function(x) smooth_neuron(x, sigma=6000))
+#read png
+{
+img1 <- readPNG("pictures/Platynereis_SEM_inverted.png")
+img2 <- readPNG("pictures/connectome_SN_IN_MN_synapses_ventral.png")
+img3 <- readPNG("pictures/connectome_SN_IN_MN_synapses_frontal.png")
+img4 <- readPNG("pictures/connectome_SN_IN_MN_cells_ventral.png")
+img5 <- readPNG("pictures/connectome_SN_IN_MN_cells_nosoma_ventral.png")
+img6 <- readPNG("pictures/connectome_SN_IN_MN_cells_nosoma_frontal.png")
+img7 <- readPNG("pictures/connectome_SN_IN_MN_cells_frontal.png")
+img8 <- readPNG("pictures/connectome_effectors_frontal.png")
+img9 <- readPNG("pictures/connectome_body_all_cells_ventral.png")
+img10 <- readPNG("pictures/SN_left.png")
+img11 <- readPNG("pictures/SN_MN_left.png")
+img12 <- readPNG("pictures/SN_IN_left.png")
+img13 <- readPNG("pictures/connectome_SN_IN_MN_synapses_left.png")
+}
+#convert png to image panel
+{
+panel1 <- ggdraw() + draw_image(img1, scale = 1)
+panel2 <- ggdraw() + draw_image(img2, scale = 1) + 
+  draw_label("synapses", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("ventral", x = 0.9, y = 0.1,  hjust=1,fontfamily = "sans", fontface = "plain",
+             color = "black", size = 9, angle = 0, lineheight = 0.9, alpha = 1)
+panel3 <- ggdraw() + draw_image(img3, scale = 1.2) + 
+  draw_label("synapses", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("frontal", x = 0.9, y = 0.1,  hjust=1,fontfamily = "sans", fontface = "plain",
+             color = "black", size = 9, angle = 0, lineheight = 0.9, alpha = 1)
+panel4 <- ggdraw() + draw_image(img4, scale = 1)
+panel5 <- ggdraw() + draw_image(img5, scale = 1) + draw_label("SN", x = 0.9, y = 0.95, fontfamily = "sans", fontface = "plain",
+  color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("IN", x = 0.9, y = 0.9, fontfamily = "sans", fontface = "plain",
+               color = "#CC79A7", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("MN", x = 0.9, y = 0.85, fontfamily = "sans", fontface = "plain",
+             color = "#0072B2", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("neurons (no soma)", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("ventral", x = 0.9, y = 0.1,  hjust=1,fontfamily = "sans", fontface = "plain",
+             color = "black", size = 9, angle = 0, lineheight = 0.9, alpha = 1)
+panel6 <- ggdraw() + draw_image(img6, scale = 1)
+panel7 <- ggdraw() + draw_image(img7, scale = 1)
+panel8 <- ggdraw() + draw_image(img8, scale = 1) + 
+  draw_label("effectors", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)
+panel9 <- ggdraw() + draw_image(img9, scale = 1) + 
+  draw_label("all cells", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)
+panel10 <- ggdraw() + draw_image(img10, scale = 1) + draw_label("SN", x = 0.93, y = 0.95, fontfamily = "sans", fontface = "plain",
+                                                                color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("left", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("neurons with soma", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)
+panel11 <- ggdraw() + draw_image(img11, scale = 1) + draw_label("SN", x = 0.93, y = 0.95, fontfamily = "sans", fontface = "plain",
+                                                                color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("MN", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
+             color = "#0072B2", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("left", x = 0.93, y = 0.85, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)  +
+  draw_label("neurons with soma", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)
+panel12 <- ggdraw() + draw_image(img12, scale = 1) + draw_label("SN", x = 0.93, y = 0.95, fontfamily = "sans", fontface = "plain",
+                                                                color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("IN", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
+             color = "#CC79A7", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("left", x = 0.93, y = 0.85, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)  +
+  draw_label("neurons with soma", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1)
+panel13 <- ggdraw() + draw_image(img13, scale = 1) + draw_label("SN", x = 0.93, y = 0.95, fontfamily = "sans", fontface = "plain",
+                                                                color = "#E69F00", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("IN", x = 0.93, y = 0.9, fontfamily = "sans", fontface = "plain",
+             color = "#CC79A7", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("MN", x = 0.93, y = 0.85, fontfamily = "sans", fontface = "plain",
+             color = "#0072B2", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("synapses", x = 0.5, y = 0.98, fontfamily = "sans", fontface = "plain",
+             color = "black", size = 10, angle = 0, lineheight = 0.9, alpha = 1) +
+  draw_label("left", x = 0.9, y = 0.1, hjust=1,fontfamily = "sans", fontface = "plain",
+             color = "black", size = 9, angle = 0, lineheight = 0.9, alpha = 1)
+}
+#cb friendly colour codes interneuron = "#CC79A7", motoneuron = "#0072B2",  `sensory neuron` = "#E69F00"
 
-next3d(clear=F)
-plot3d(skeletons_to_plot, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
-       add=T, alpha=1, col="#CC79A7")
-next3d(clear=F)
-plot3d(skeletons_to_plot_left, WithConnectors = F, WithNodes = F, soma=T, lwd=1,
-       add=T, alpha=1, col="#CC79A7")
+#combine panels first
+{
+Fig1BCDE <- plot_grid(panel5, NULL, panel6, panel2, NULL, panel3,
+          ncol=3,
+          align="h",
+          # A negative rel_height shrinks space between elements
+          rel_widths = c(1, -0.2, 1),
+          rel_heights = c(1, 1),
+          label_size = 24,
+          label_y = 1,
+          label_x = 0.1,
+          label_fontfamily = "sans", label_fontface = "plain",
+          labels=c("B","","C","D", "", "E") )+
+  theme(plot.margin = unit(c(-5, -40, 1, -8), units = "pt"))
+
+
+ggsave("figures/Figure1BCDE.png", limitsize = FALSE, 
+       units = c("cm"), Fig1BCDE, width=16, height = 20)
+imgBCDE <- readPNG("figures/Figure1BCDE.png")
+panelBCDE <- ggdraw() + draw_image(imgBCDE, scale = 1)
+}
+
+#plot in a multi panel figure
+Fig1 <- plot_grid(panel1, panel5, panel2, panel3, panel13,
+                  NULL,NULL,NULL,NULL,NULL,
+                  panel8, panel9, panel10, panel11, panel12,
+                  NULL,NULL,NULL,NULL,NULL,
+                  panel8, panel9, panel10, panel11, panel12,
+          ncol=5,
+          align="h",
+          # A negative rel_height shrinks space between elements
+          rel_widths = c(1, 1, 1, 1, 1),
+          rel_heights = c(1, 0.03, 1, 0.03, 1),
+          label_size = 12,
+          label_y = 1.01,
+          label_x = 0.02,
+          label_fontfamily = "sans", label_fontface = "plain",
+          labels=c("A","B","C","D","E", 
+                   "", "", "", "", "",
+                   "F","G", "H", "I", "J"))+
+  theme(plot.margin = unit(c(1, 1, 1, 1), units = "pt"))
+
+ggsave("figures/Figure1.pdf", limitsize = FALSE, 
+       units = c("cm"), Fig1, width = 23.9, height = 21)
+
+#It may help to specify the dimensions of the plot window to ensure that the plot is made with correct overall proportions.
+try(dev.off(), silent = T)
+dev.new(width = 1, height = 1, units = "cm")
+
+ggdraw() +
+  draw_plot(panel1, x = 0, y = 0.7, width = .3, height = .3) +
+  draw_plot(panel5, x = 0.2, y = 0.7, width = .3, height = .3) +
+  draw_plot(panel2, x = 0.4, y = 0.7, width = .3, height = .3) +
+  draw_plot(panel3, x = 0.6, y = 0.7, width = .3, height = .3) +
+  draw_plot(panel13, x = 0.8, y = 0.7, width = .3, height = .3) +
+  draw_plot(panel8, x = 0, y = -0.02, width = .3, height = 0.3) +
+  draw_plot(panel9, x = 0.2, y = -0.02, width = .3, height = 0.3) +
+  draw_plot(panel10, x = 0.4, y = -0.02, width = .3, height = 0.3) +
+  draw_plot(panel11, x = 0.6, y = -0.02, width = .3, height = 0.3) +
+  draw_plot(panel12, x = 0.8, y = -0.02, width = .3, height = 0.3) +
+  draw_plot_label(label = c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J"), size = 12,
+                  x = c(0, 0.19, 0.39, 0.59, 0.79, 0, 0.19, 0.39, 0.59, 0.79), 
+                  y = c(1.01, 1.01,1.01, 1.01, 1.01, 0.49, 0.49, 0.49, 0.49, 0.49), fontface = "plain")+
+  theme(plot.margin = unit(c(1,1,2,0), "mm")) #set margins, top, right, bottom, left
 
