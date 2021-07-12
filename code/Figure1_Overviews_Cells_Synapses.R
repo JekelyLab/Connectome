@@ -262,6 +262,14 @@ rgl.snapshot("pictures/connectome_body_all_cells_ventral.png")
 ############################
 #plot SN IN and MN only on left side with soma
 
+#function to retrieve skids based on two annotations
+skids_by_2annotations <- function(annotation1,annotation2){
+  annotations_cells = list()
+  annotations_cells[[1]] <- catmaid_get_annotations_for_skeletons(annotation1, pid = 11)
+  #we retrieve those skeletons that are also annotated with right_side
+  return(unlist(lapply(annotations_cells,function(x) x[x$annotation==annotation2,1])))
+}
+
 #plot one panel background
 {
   nopen3d() # opens a pannable 3d window
@@ -490,6 +498,15 @@ SN_IN_MN <- mutate(SN_IN_MN, branchpoints_length_ratio = (N.branch.nodes)/(Smoot
 #add a column with sum of input and output synapses ('total synapses')
 SN_IN_MN <- mutate(SN_IN_MN, total_synapses = (N.inputs+N.outputs))
 
+#median cable length of neurons
+median(SN$Smooth.cable..nm.)
+median(IN$Smooth.cable..nm.)
+median(MN$Smooth.cable..nm.)
+median(SN_IN_MN$Smooth.cable..nm.)
+max(SN_IN_MN$Smooth.cable..nm.)
+
+
+
 #start plotting with ggplot
 library(ggplot2)
 {
@@ -631,6 +648,7 @@ library(ggplot2)
   
   SN_IN_MN_in_out_tb
 }
+
 
 
 #generate synapse distribution plots
