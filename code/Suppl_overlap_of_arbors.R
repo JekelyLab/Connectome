@@ -2,6 +2,10 @@
 library(natverse)
 library(nat)
 source("~/R/conn.R")
+#for larger calls we need to use http/1, see https://www.gitmemory.com/issue/natverse/rcatmaid/158/641537466
+#for this we configure to http/1.1
+conn_http1 = catmaid_login(conn=conn, config=httr::config(ssl_verifypeer=0, http_version=1))
+
 ####################################
 
 #set working directory
@@ -42,35 +46,29 @@ heatmaply(PRC_IN1_conn_mat,Rowv = NA, Colv = NA)
 cor(c(PRC_IN1_conn_mat), c(overlap_PRC_IN1))
 
 ##############################################################
-#this section calculates the overlap score between all celltypes in the episphere
+#this section calculates the overlap score between all cells that are annotated as connectome_neuron in the episphere
 
-#first we read all celltypes from 1-182 with their annotations
-annotation_celltypelist = list()
-for (i in c(1:182)){
-  number_of_neuron_types <- number_of_neuron_types + 1
-  annotation = paste("annotation:^celltype", i, "$", sep="")
-  #retrieve all annotations for the same neurons and create the annotations data frames
-  annotation_celltypelist[[i]] <- catmaid_get_annotations_for_skeletons(annotation, pid = 11)
+#function to retrieve skids based on two annotations
+skids_by_2annotations <- function(annotation1,annotation2){
+  annotations_cells = list()
+  annotation1 <- paste("^", annotation1, "$", sep ="")
+  annotations_cells[[1]] <- catmaid_get_annotations_for_skeletons(annotation1, pid = 11, conn=conn_http1)
+  #we retrieve those skeletons that are also annotated with right_side
+  return(unlist(lapply(annotations_cells,function(x) x[x$annotation==annotation2,1])))
 }
 
-#we retrieve the those skeletons that are also annotated with episphere
-episphere_skids <- list()
-list_position <- 0
-for (df1 in annotation_celltypelist){    #iterate through the celltype list 
-    skids <- df1[df1$annotation == 'episphere',1]
-    if (length(skids)==0 ) {next}
-    print(skids)
-    list_position <- list_position + 1
-    episphere_skids[[list_position]] <- skids
-}
+episphere_skidsMN <- skids_by_2annotations('motorneuron','episphere')
+episphere_skidsSN <- skids_by_2annotations('Sensory neuron','episphere')
+episphere_skidsIN <- skids_by_2annotations('connectome_interneuron','episphere')
+episphere_skids <- c(episphere_skidsMN,episphere_skidsSN,episphere_skidsIN)
 
-#total number of episphere skids from celltype list
-length(unlist(episphere_skids))
+#total number of unique episphere skids of SN IN MN cells
+length(unique(episphere_skids))
 
-episphere_skeletons <- read.neurons.catmaid(unlist(episphere_skids),pid=11)
+episphere_skeletons <- read.neurons.catmaid(unique(episphere_skids), pid=11, conn=conn_http1)
 
 #calculate overlap between all episphere neurons
-overlap_episphere <- overlap_score(episphere_skeletons, episphere_skeletons, delta=160, progress = TRUE)
+system.time(overlap_episphere <- overlap_score(episphere_skeletons, episphere_skeletons, delta=160, progress = TRUE))
 
 #save table
 write.csv(overlap_episphere, file = "overlap_episphere.csv",
